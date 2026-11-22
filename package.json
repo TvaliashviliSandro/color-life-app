@@ -1,0 +1,16 @@
+{
+  "name": "color-life-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Color Life — Conway's Game of Life with colour hints, as an Android app and installable web app.",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

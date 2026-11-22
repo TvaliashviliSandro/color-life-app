@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Color Life</title>
+  <meta name="theme-color" content="#0f1115" />
+  <meta name="description" content="Conway's Game of Life with colour hints and a predict mode." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Color Life" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>Color Life</h1>
+    <div class="stats">
+      <span>Gen <b id="gen">0</b></span>
+      <span>Cells <b id="pop">0</b></span>
+      <button id="rulesBtn" class="rules-btn" title="How the game works">? Rules</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <canvas id="board"></canvas>
+    <div id="toast" class="toast" hidden></div>
+  </main>
+
+  <section class="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-mode="play" role="tab">▶ Play mode</button>
+      <button class="tab" data-mode="predict" role="tab">🎨 Predict mode</button>
+    </div>
+
+    <div class="row buttons">
+      <button id="startBtn" class="primary" title="Start (Space)">Start</button>
+      <button id="stopBtn" title="Stop (Space)">Stop</button>
+      <button id="undoBtn" title="Undo one iteration (← or Z)">⟲ Undo</button>
+      <button id="nextBtn" title="Next iteration (→ or N)">Next ⟶</button>
+      <button id="resetBtn" class="danger" title="Clear the board">Reset</button>
+      <button id="randomBtn" title="Fill the visible area randomly">Random</button>
+    </div>
+
+    <div class="row sliders">
+      <label>Speed <span id="speedLabel">200 ms</span>
+        <input id="speed" type="range" min="0" max="100" value="45" />
+      </label>
+      <label>Zoom <span id="zoomLabel">20 px</span>
+        <input id="zoom" type="range" min="0" max="100" value="60" />
+      </label>
+    </div>
+
+    <!-- Play mode extras -->
+    <div class="row mode-play">
+      <label class="check"><input id="hints" type="checkbox" checked /> Show color hints</label>
+      <div class="legend">
+        <span><i class="sw green"></i>stays alive</span>
+        <span><i class="sw red"></i>dies next</span>
+        <span><i class="sw yellow"></i>is born next</span>
+      </div>
+    </div>
+
+    <!-- Predict mode extras -->
+    <div class="row mode-predict" hidden>
+      <div class="brushes">
+        <button class="brush active" data-brush="born"><i class="sw yellow"></i>Born</button>
+        <button class="brush" data-brush="die"><i class="sw red"></i>Dies</button>
+        <button class="brush" data-brush="survive"><i class="sw green"></i>Survives</button>
+        <button class="brush" data-brush="erase">✕ Erase</button>
+      </div>
+      <div class="predict-actions">
+        <button id="checkBtn" class="primary">Guess</button>
+        <button id="clearGuessBtn">Clear guesses</button>
+        <button id="editBlocksBtn">Edit white blocks</button>
+      </div>
+      <p id="score" class="score"></p>
+    </div>
+
+    <p class="help">Tap a square to turn it on, tap again to turn it off · drag to move · scroll / pinch to zoom</p>
+  </section>
+
+  <div id="rules" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+      <button id="rulesClose" class="modal-close" aria-label="Close">✕</button>
+      <h2 id="rulesTitle">The 4 main principles</h2>
+      <p class="modal-sub">Every cell looks at its 8 neighbours (the squares touching it, diagonals included). All cells update at the same time, once per generation.</p>
+      <div class="rules-list">
+        <article class="rule red">
+          <div class="mini"><i></i><i class="on"></i><i></i><i></i><i class="die"></i><i></i><i></i><i></i><i></i></div>
+          <div><h3>1. Loneliness</h3><p>A live cell with <b>0 or 1</b> live neighbours <b>dies</b> — it has too few friends.</p></div>
+        </article>
+        <article class="rule green">
+          <div class="mini"><i class="on"></i><i></i><i></i><i></i><i class="live"></i><i class="on"></i><i></i><i></i><i></i></div>
+          <div><h3>2. Survival</h3><p>A live cell with <b>2 or 3</b> live neighbours <b>stays alive</b> into the next generation.</p></div>
+        </article>
+        <article class="rule red">
+          <div class="mini"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="die"></i><i></i><i class="on"></i><i></i><i class="on"></i></div>
+          <div><h3>3. Overcrowding</h3><p>A live cell with <b>4 or more</b> live neighbours <b>dies</b> — it is too crowded.</p></div>
+        </article>
+        <article class="rule yellow">
+          <div class="mini"><i class="on"></i><i></i><i class="on"></i><i></i><i class="born"></i><i></i><i></i><i class="on"></i><i></i></div>
+          <div><h3>4. Birth</h3><p>An empty cell with <b>exactly 3</b> live neighbours <b>comes to life</b>.</p></div>
+        </article>
+      </div>
+      <p class="modal-sub">In the game the colours show what happens next: <i class="sw green"></i> stays alive, <i class="sw red"></i> dies, <i class="sw yellow"></i> is born.</p>
+      <button id="rulesOk" class="primary modal-ok">Got it</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
