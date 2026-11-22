@@ -32,9 +32,10 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - name: Install and copy web files into the Android project
+      - name: Install, test, and copy web files into the Android project
         run: |
           npm ci
+          npm test
           npx cap sync android
 
       - name: Build signed APK

@@ -1,11 +1,11 @@
 {
   "name": "Color Life",
   "short_name": "Color Life",
-  "description": "Conway's Game of Life with colour hints and a predict mode.",
+  "description": "Predict the next step: quick Game of Life puzzles, a daily challenge and a 60-second rush.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#0f1115",
   "theme_color": "#0f1115",
   "icons": [
