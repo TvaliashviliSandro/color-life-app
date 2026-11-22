@@ -51,6 +51,7 @@ function goHome() {
   closePlayground();
   G = null;
   $("rules").hidden = true;
+  closeLesson();
   show("home");
 }
 history.replaceState({ s: "home" }, "");
@@ -118,6 +119,65 @@ function renderBoard(el, size, live, { marks, outcome, results, flip } = {}) {
   el.innerHTML = html;
 }
 
+// ---------- Tutorial lessons (popup before each of the first 5 levels) ----------
+// Example grids are 3×3, middle cell = index 4. "on" = live, "" = empty.
+const TAP = {
+  survive: '<span class="tap-demo"><i class="on"></i>→<i class="survive">●</i></span><span>Tap a white cell <b>once</b> = 🟢 survives</span>',
+  die: '<span class="tap-demo"><i class="on"></i>→<i class="die">✕</i></span><span>Tap a white cell <b>twice</b> = 🔴 dies</span>',
+  born: '<span class="tap-demo"><i></i>→<i class="born">+</i></span><span>Tap an <b>empty</b> cell = 🟡 born</span>',
+};
+const LESSONS = [
+  { title: "Survive",
+    before: ["", "on", "", "", "on", "on", "", "", ""], result: "survive",
+    body: "Your job: predict what every cell does in the <b>next step</b>.<br>Each cell counts its <b>8 neighbours</b> (diagonals too). A live cell with <b>2 or 3</b> live neighbours <b>survives</b>.",
+    how: ["survive"] },
+  { title: "Lonely cells die",
+    before: ["on", "", "", "", "on", "", "", "", ""], result: "die",
+    body: "A live cell with <b>0 or 1</b> live neighbours <b>dies</b> of loneliness.",
+    how: ["survive", "die"] },
+  { title: "Birth",
+    before: ["on", "", "on", "", "", "", "", "on", ""], result: "born",
+    body: "An <b>empty</b> cell with <b>exactly 3</b> live neighbours is <b>born</b>.",
+    how: ["survive", "born"] },
+  { title: "Crowded cells die",
+    before: ["on", "", "on", "", "on", "", "on", "", "on"], result: "die",
+    body: "A live cell with <b>4 or more</b> live neighbours <b>dies</b> from overcrowding.",
+    how: ["survive", "die", "born"] },
+  { title: "Put it all together",
+    rules: true,
+    body: "Use every rule at once. Check each white cell, then look for empty cells with exactly 3 neighbours.",
+    how: ["survive", "die", "born"] },
+];
+const GLYPH = { survive: "●", die: "✕", born: "+" };
+
+function lessonExample(L) {
+  if (L.rules) {
+    return `<ul class="lesson-rules">
+      <li><i class="sw die"></i><span><b>0–1</b> neighbours: dies</span></li>
+      <li><i class="sw survive"></i><span><b>2–3</b> neighbours: survives</span></li>
+      <li><i class="sw die"></i><span><b>4+</b> neighbours: dies</span></li>
+      <li><i class="sw born"></i><span>empty + <b>exactly 3</b>: born</span></li></ul>`;
+  }
+  const grid = (cells) => `<div class="mini big">${cells.map((c) => `<i class="${c}">${GLYPH[c] || ""}</i>`).join("")}</div>`;
+  const after = L.before.map((c, i) => (i === 4 ? L.result : c ? "ghost" : ""));
+  return `<div class="lesson-grids"><div>${grid(L.before)}<small>now</small></div><span class="arrow">→</span><div>${grid(after)}<small>next step</small></div></div>`;
+}
+
+function showLesson(level) {
+  const L = LESSONS[level - 1];
+  $("lessonStep").textContent = `Lesson ${level} of ${LESSONS.length}`;
+  $("lessonTitle").textContent = L.title;
+  $("lessonExample").innerHTML = lessonExample(L);
+  $("lessonBody").innerHTML = L.body;
+  $("lessonHow").innerHTML = L.how.map((t) => `<p>${TAP[t]}</p>`).join("");
+  const m = $("lesson");
+  m.hidden = false;
+  m.firstElementChild.style.animation = "none"; void m.offsetWidth; m.firstElementChild.style.animation = "";
+  $("lessonGo").focus();
+}
+const closeLesson = () => { $("lesson").hidden = true; };
+$("lessonGo").onclick = closeLesson;
+
 // ---------- Puzzle setup ----------
 function setupPuzzle(puzzle) {
   Object.assign(G, { puzzle, marks: new Map(), choice: null, phase: "solve" });
@@ -140,10 +200,11 @@ function setupPuzzle(puzzle) {
   }
   $("hint").innerHTML = hintFor(puzzle);
   updateBar();
+  if (G.mode === "level" && G.level <= TUTORIAL.length) showLesson(G.level);
 }
 
 function hintFor(p) {
-  if (p.hint) return p.hint;
+  if (p.hint) return "";            // tutorial levels explain themselves in the lesson popup
   if (p.kind === "before") return "Pick the board that turns into this one after <b>one step</b>.";
   if (p.steps > 1) return "Predict <b>2 steps ahead</b>: mark how each cell ends up after two steps.";
   if (G.mode === "daily" || (G.mode === "level" && G.level <= 8))
@@ -166,7 +227,8 @@ function updateBar() {
   } else {
     $("gameTitle").textContent = "Rush";
     $("gameSub").textContent = `Solved ${G.rush.score}`;
-    $("gameStatus").textContent = `⏱ ${Math.ceil(Math.max(0, G.rush.endAt - Date.now()) / 1000)}`;
+    const now = G.rush.pausedAt || Date.now();
+    $("gameStatus").textContent = `⏱ ${Math.ceil(Math.max(0, G.rush.endAt - now) / 1000)}`;
   }
 }
 const describe = (p) => p.kind === "before" ? "Which came before?" : `${p.size}×${p.size}` + (p.steps > 1 ? " · 2 steps ahead" : "");
@@ -411,6 +473,7 @@ function playRush() {
   nextRush();
   rushTimer = setInterval(() => {
     if (!G || G.mode !== "rush") return stopRush();
+    if (G.rush.pausedAt) return;
     updateBar();
     if (Date.now() >= G.rush.endAt) endRush();
   }, 200);
@@ -514,16 +577,25 @@ $("themesBtn").onclick = () => go("themes");
 // ---------- Playground ----------
 $("playgroundBtn").onclick = () => { go("playground"); openPlayground(); };
 
-// ---------- How to play ----------
-const openRules = () => { $("rules").hidden = false; };
-const closeRules = () => { $("rules").hidden = true; if (!S.seenRules) { S.seenRules = true; store.save(S); } };
+// ---------- How to play (home button and the ? in the game bar) ----------
+function openRules() {
+  if (current === "game" && G?.mode === "rush" && !G.rush.over) G.rush.pausedAt = Date.now();   // pause the clock
+  $("rules").hidden = false;
+}
+function closeRules() {
+  $("rules").hidden = true;
+  if (G?.rush?.pausedAt) { G.rush.endAt += Date.now() - G.rush.pausedAt; G.rush.pausedAt = null; }
+  if (!S.seenRules) { S.seenRules = true; store.save(S); }
+}
 $("rulesBtn").onclick = openRules;
+document.querySelectorAll("[data-rules]").forEach((b) => (b.onclick = openRules));
 $("rulesClose").onclick = closeRules;
 $("rulesOk").onclick = closeRules;
 $("rules").addEventListener("click", (e) => { if (e.target === $("rules")) closeRules(); });
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !$("rules").hidden) closeRules();
-  else if (e.key === "Enter" && current === "game" && G?.phase === "solve") check();
+  if (!$("lesson").hidden) { if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); closeLesson(); } return; }
+  if (!$("rules").hidden) { if (e.key === "Escape") closeRules(); return; }
+  if (e.key === "Enter" && current === "game" && G?.phase === "solve") check();
 });
 
 // ---------- Start ----------

@@ -377,6 +377,83 @@ button.wide { width: 100%; }
 .modes li { margin-bottom: 4px; }
 .modes b { color: var(--text); margin-right: 4px; }
 
+/* ---------- ? button ---------- */
+.help-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  background: transparent;
+}
+
+/* ---------- Tap demos (rules + lessons) ---------- */
+.taps { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); }
+.taps li, .lesson-how p { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.taps b, .lesson-how b { color: var(--text); }
+.tap-demo { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.tap-demo i {
+  width: 20px; height: 20px; border-radius: 5px;
+  display: grid; place-items: center;
+  background: var(--empty); border: 1px solid var(--line);
+  font-style: normal; font-weight: 800; font-size: 11px; color: rgba(0, 0, 0, .55);
+}
+.tap-demo i.on { background: var(--live); }
+.tap-demo i.survive { background: var(--survive); }
+.tap-demo i.die { background: var(--die); }
+.tap-demo i.born { background: var(--born); }
+
+/* ---------- Tutorial lesson popup ---------- */
+.lesson { z-index: 12; background: rgba(0, 0, 0, .72); }
+.lesson .modal-card {
+  text-align: center;
+  max-width: 420px;
+  border: 2px solid var(--accent);
+  animation: lesson-in .35s cubic-bezier(.3, 1.4, .5, 1);
+}
+@keyframes lesson-in { from { transform: scale(.85); opacity: 0; } }
+.lesson-step {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+.lesson h2 { margin: 0 0 14px; font-size: 24px; }
+.lesson-grids { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+.lesson-grids > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.lesson-grids small { color: var(--muted); font-size: 12px; }
+.lesson-grids .arrow { font-size: 24px; color: var(--muted); margin-bottom: 18px; }
+.mini.big { grid-template-columns: repeat(3, 30px); gap: 4px; }
+.mini.big i {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: grid; place-items: center;
+  font-style: normal; font-weight: 800; font-size: 14px; color: rgba(0, 0, 0, .55);
+}
+.mini.big i.ghost { background: var(--live); opacity: .25; }
+.lesson-body { margin: 0 0 14px; font-size: 16px; line-height: 1.45; }
+.lesson-how {
+  text-align: left;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.lesson-rules { list-style: none; margin: 0 auto 14px; padding: 0; text-align: left; display: inline-grid; gap: 6px; font-size: 15px; }
+.lesson-rules li { display: flex; align-items: center; gap: 8px; }
+.big-btn { padding: 14px; font-size: 17px; }
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed;

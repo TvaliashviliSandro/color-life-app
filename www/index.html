@@ -64,6 +64,7 @@
     <header class="bar">
       <button class="icon" data-back aria-label="Back">←</button>
       <div class="bar-title"><b id="gameTitle"></b><span id="gameSub"></span></div>
+      <button class="help-btn" data-rules aria-label="Rules">?</button>
       <span class="pill" id="gameStatus"></span>
     </header>
 
@@ -115,7 +116,7 @@
     <header class="bar">
       <button class="icon" data-back aria-label="Back">←</button>
       <div class="bar-title"><b>Playground</b><span>Gen <b id="pgGen">0</b> · Cells <b id="pgPop">0</b></span></div>
-      <span></span>
+      <button class="help-btn" data-rules aria-label="Rules">?</button>
     </header>
     <div class="pg-stage"><canvas id="pgBoard"></canvas></div>
     <div class="pg-panel">
@@ -161,6 +162,12 @@
         <article class="rule" style="--c: var(--born)"><div class="mini"><i class="on"></i><i></i><i class="on"></i><i></i><i class="born"></i><i></i><i></i><i class="on"></i><i></i></div>
           <div><h3>Exactly 3 → born</h3><p>An empty cell with <b>exactly 3</b> live neighbours comes to life.</p></div></article>
       </div>
+      <h3 class="modes-title">How to answer</h3>
+      <ul class="taps">
+        <li><span class="tap-demo"><i class="on"></i>→<i class="survive">●</i></span><span>Tap a white cell once: it <b>survives</b></span></li>
+        <li><span class="tap-demo"><i class="on"></i>→<i class="die">✕</i></span><span>Tap it twice: it <b>dies</b></span></li>
+        <li><span class="tap-demo"><i></i>→<i class="born">+</i></span><span>Tap an empty cell: it's <b>born</b></span></li>
+      </ul>
       <h3 class="modes-title">Modes</h3>
       <ul class="modes">
         <li><b>▶ Play</b> Endless levels that slowly get harder. A puzzle with 3+ mistakes costs a heart.</li>
@@ -168,6 +175,18 @@
         <li><b>⚡ Rush</b> Solve as many as you can in 60 seconds. Only perfect answers count.</li>
       </ul>
       <button class="primary wide" id="rulesOk">Got it</button>
+    </div>
+  </div>
+
+  <!-- ============ Tutorial lesson popup ============ -->
+  <div id="lesson" class="modal lesson" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="lessonTitle">
+      <p class="lesson-step" id="lessonStep">Lesson 1 of 5</p>
+      <h2 id="lessonTitle"></h2>
+      <div class="lesson-example" id="lessonExample"></div>
+      <p class="lesson-body" id="lessonBody"></p>
+      <div class="lesson-how" id="lessonHow"></div>
+      <button class="primary wide big-btn" id="lessonGo">Let's try ▶</button>
     </div>
   </div>
 

@@ -292,5 +292,5 @@ export function openPlayground() {
 
 export function closePlayground() {
   open = false;
-  stop();
+  if (ready) stop();     // nothing to stop if the playground was never opened
 }
