@@ -3,6 +3,7 @@ import { levelPuzzle, dailyPuzzle, rushPuzzle, grade, TUTORIAL } from "./puzzles
 import { key } from "./life.js";
 import * as store from "./store.js";
 import { THEMES, applyTheme } from "./themes.js";
+import { openPlayground, closePlayground } from "./playground.js";
 
 const $ = (id) => document.getElementById(id);
 const SITE = "https://tvaliashvilisandro.github.io/color-life-app/";
@@ -35,7 +36,7 @@ function toast(msg, ms = 1800) {
 }
 
 // ---------- Navigation (also makes Android's back button return home) ----------
-const SCREENS = ["home", "game", "nolives", "themes"];
+const SCREENS = ["home", "game", "nolives", "themes", "playground"];
 function show(id) {
   for (const s of SCREENS) $(s).hidden = s !== id;
   current = id;
@@ -47,6 +48,7 @@ function go(id) {
 }
 function goHome() {
   stopRush();
+  closePlayground();
   G = null;
   $("rules").hidden = true;
   show("home");
@@ -508,6 +510,9 @@ function renderThemes() {
   }
 }
 $("themesBtn").onclick = () => go("themes");
+
+// ---------- Playground ----------
+$("playgroundBtn").onclick = () => { go("playground"); openPlayground(); };
 
 // ---------- How to play ----------
 const openRules = () => { $("rules").hidden = false; };

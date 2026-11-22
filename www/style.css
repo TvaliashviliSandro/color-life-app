@@ -278,6 +278,39 @@ button.wide { width: 100%; }
 .big-emoji { font-size: 64px; }
 .empty-state p { margin: 0; }
 
+/* ---------- Playground ---------- */
+.screen.playground { max-width: none; padding-left: 0; padding-right: 0; padding-bottom: 0; overflow: hidden; }
+.playground .bar { margin: 0; padding: 0 calc(8px + var(--sar)) 4px calc(8px + var(--sal)); }
+.playground .bar-title span b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pg-stage { flex: 1; min-height: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+#pgBoard { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.pg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px calc(16px + var(--sar)) calc(12px + var(--sab)) calc(16px + var(--sal));
+  background: var(--panel);
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+.pg-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pg-buttons button { padding: 10px 4px; font-size: 14px; white-space: nowrap; }
+.pg-buttons .danger:active { background: var(--die); }
+.pg-sliders { display: flex; gap: 16px; }
+.pg-sliders label { flex: 1; display: flex; flex-direction: column; gap: 2px; color: var(--muted); font-size: 13px; }
+.pg-sliders span { color: var(--text); font-variant-numeric: tabular-nums; }
+.pg-sliders input { width: 100%; accent-color: var(--accent); }
+.pg-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.check { display: inline-flex; align-items: center; gap: 6px; }
+.check input { accent-color: var(--accent); width: 18px; height: 18px; }
+.pg-legend { color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.pg-legend .sw:not(:first-child) { margin-left: 6px; }
+.pg-help { margin: 0; color: var(--muted); font-size: 12px; text-align: center; }
+@media (max-width: 380px) {
+  .pg-buttons { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* ---------- Themes ---------- */
 .theme-list { display: grid; gap: 10px; }
 .theme {

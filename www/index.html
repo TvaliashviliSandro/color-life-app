@@ -43,6 +43,9 @@
       <button class="big" id="rushBtn">
         <span class="big-title">⚡ Rush</span><span class="big-sub" id="rushSub"></span>
       </button>
+      <button class="big" id="playgroundBtn">
+        <span class="big-title">🧪 Playground</span><span class="big-sub">Draw cells and watch them evolve</span>
+      </button>
       <div class="pair">
         <button id="themesBtn">🎨 Themes</button>
         <button id="rulesBtn">❓ How to play</button>
@@ -104,6 +107,34 @@
         <button id="noLivesDaily">📅 Daily</button>
         <button id="noLivesRush">⚡ Rush</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ Playground ============ -->
+  <section id="playground" class="screen playground" hidden>
+    <header class="bar">
+      <button class="icon" data-back aria-label="Back">←</button>
+      <div class="bar-title"><b>Playground</b><span>Gen <b id="pgGen">0</b> · Cells <b id="pgPop">0</b></span></div>
+      <span></span>
+    </header>
+    <div class="pg-stage"><canvas id="pgBoard"></canvas></div>
+    <div class="pg-panel">
+      <div class="pg-buttons">
+        <button id="pgRun" class="primary">▶ Start</button>
+        <button id="pgUndo" title="Undo one step">⟲ Undo</button>
+        <button id="pgNext" title="One step forward">Next ⟶</button>
+        <button id="pgRandom">🎲 Random</button>
+        <button id="pgReset" class="danger">Clear</button>
+      </div>
+      <div class="pg-sliders">
+        <label>Speed <span id="pgSpeedLabel">200 ms</span><input id="pgSpeed" type="range" min="0" max="100" value="45" /></label>
+        <label>Zoom<input id="pgZoom" type="range" min="0" max="100" value="60" /></label>
+      </div>
+      <div class="pg-row">
+        <label class="check"><input id="pgHints" type="checkbox" checked /> Colour hints</label>
+        <span class="pg-legend"><i class="sw survive"></i>stays <i class="sw die"></i>dies <i class="sw born"></i>born</span>
+      </div>
+      <p class="pg-help">Tap to add or remove a cell · drag to move · pinch to zoom</p>
     </div>
   </section>
 
