@@ -15,6 +15,7 @@ const defaults = () => ({
   rushBest: 0,
   themes: ["classic"], theme: "classic",
   seenRules: false,
+  seenPlayground: false,
 });
 
 export function load() {

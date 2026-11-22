@@ -453,6 +453,7 @@ button.wide { width: 100%; }
 .lesson-rules { list-style: none; margin: 0 auto 14px; padding: 0; text-align: left; display: inline-grid; gap: 6px; font-size: 15px; }
 .lesson-rules li { display: flex; align-items: center; gap: 8px; }
 .big-btn { padding: 14px; font-size: 17px; }
+.how-icon { flex: none; width: 24px; text-align: center; font-size: 18px; }
 
 /* ---------- Toast ---------- */
 .toast {

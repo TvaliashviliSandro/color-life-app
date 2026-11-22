@@ -238,7 +238,7 @@ function bindInput() {
   }, { passive: false });
 
   window.addEventListener("keydown", (e) => {
-    if (!open) return;
+    if (!open || document.querySelector(".modal:not([hidden])")) return;
     switch (e.key) {
       case " ": e.preventDefault(); running ? stop() : start(); break;
       case "ArrowRight": case "n": case "N": stop(); stepOnce(); break;

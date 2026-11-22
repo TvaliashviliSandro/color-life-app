@@ -165,11 +165,19 @@ function lessonExample(L) {
 
 function showLesson(level) {
   const L = LESSONS[level - 1];
-  $("lessonStep").textContent = `Lesson ${level} of ${LESSONS.length}`;
-  $("lessonTitle").textContent = L.title;
-  $("lessonExample").innerHTML = lessonExample(L);
-  $("lessonBody").innerHTML = L.body;
-  $("lessonHow").innerHTML = L.how.map((t) => `<p>${TAP[t]}</p>`).join("");
+  showPopup({
+    step: `Lesson ${level} of ${LESSONS.length}`, title: L.title, example: lessonExample(L),
+    body: L.body, how: L.how.map((t) => `<p>${TAP[t]}</p>`).join(""), button: "Let's try ▶",
+  });
+}
+
+function showPopup({ step, title, example = "", body, how, button }) {
+  $("lessonStep").textContent = step;
+  $("lessonTitle").textContent = title;
+  $("lessonExample").innerHTML = example;
+  $("lessonBody").innerHTML = body;
+  $("lessonHow").innerHTML = how;
+  $("lessonGo").textContent = button;
   const m = $("lesson");
   m.hidden = false;
   m.firstElementChild.style.animation = "none"; void m.offsetWidth; m.firstElementChild.style.animation = "";
@@ -575,7 +583,26 @@ function renderThemes() {
 $("themesBtn").onclick = () => go("themes");
 
 // ---------- Playground ----------
-$("playgroundBtn").onclick = () => { go("playground"); openPlayground(); };
+$("playgroundBtn").onclick = () => {
+  go("playground");
+  openPlayground();
+  if (!S.seenPlayground) {
+    S.seenPlayground = true;
+    store.save(S);
+    showPopup({
+      step: "Free play", title: "Playground",
+      body: "No levels and no score. Draw any pattern on an endless board and watch the rules of life play out, step by step.",
+      how: [
+        ["✏️", "<b>Tap</b> squares to draw or erase cells, then press <b>▶ Start</b> to watch them evolve."],
+        ["👣", "Use <b>Next</b> and <b>Undo</b> to go one step at a time: guess first, then check."],
+        ["🎨", "Turn on <b>Colour hints</b> to see what survives 🟢, dies 🔴 and is born 🟡 next."],
+        ["🛸", "Watch the starter patterns: the <b>glider</b> walks across the board, the <b>blinker</b> flips forever."],
+        ["🎲", "<b>Random</b> fills the screen. See what's left standing after a few hundred steps."],
+      ].map(([icon, text]) => `<p><span class="how-icon">${icon}</span><span>${text}</span></p>`).join(""),
+      button: "Start playing ▶",
+    });
+  }
+};
 
 // ---------- How to play (home button and the ? in the game bar) ----------
 function openRules() {
