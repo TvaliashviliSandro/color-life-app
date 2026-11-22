@@ -52,3 +52,20 @@ export function outcome(before, after) {
   for (const k of after) if (!before.has(k)) born.add(k);
   return { survive, die, born };
 }
+
+// Same key for a shape however it's moved, rotated or mirrored.
+export function shapeKey(cells) {
+  const pts = [...cells].map(parse);
+  let best = null;
+  for (let r = 0; r < 8; r++) {
+    const p = pts.map(([x, y]) => {
+      let a = x, b = y;
+      for (let i = 0; i < r % 4; i++) [a, b] = [-b, a];
+      return [r >= 4 ? -a : a, b];
+    });
+    const mx = Math.min(...p.map((q) => q[0])), my = Math.min(...p.map((q) => q[1]));
+    const form = p.map(([a, b]) => `${a - mx},${b - my}`).sort().join(" ");
+    if (best === null || form < best) best = form;
+  }
+  return best;
+}

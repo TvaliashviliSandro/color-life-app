@@ -63,3 +63,35 @@ test("grading counts wrong, missed and false births", () => {
   const extra = new Map(perfect); extra.set("0,0", "born");
   assert.equal(grade(p, extra).mistakes, 1);
 });
+
+test("no level repeats a recent shape, even rotated or mirrored", async () => {
+  const { puzzleShape } = await import("../www/js/puzzles.js");
+  const shapes = [];
+  for (let level = 6; level <= 200; level++) {
+    const s = puzzleShape(levelPuzzle(level, 0));
+    assert.ok(!shapes.slice(-10).includes(s), `level ${level} repeats a shape from the 10 before it`);
+    shapes.push(s);
+  }
+  for (let a = 1; a < 5; a++)
+    assert.notEqual(puzzleShape(levelPuzzle(20, a)), puzzleShape(levelPuzzle(20, a - 1)), "retry gives a new shape");
+  const rush = [];
+  for (let i = 0; i < 40; i++) {
+    const s = puzzleShape(rushPuzzle("run", i));
+    assert.ok(!rush.slice(-10).includes(s), `rush puzzle ${i} repeats`);
+    rush.push(s);
+  }
+});
+
+test("boards are shapes with something to think about, not scattered dots", async () => {
+  const { neighbours } = await import("../www/js/life.js");
+  for (let level = 6; level <= 120; level++) {
+    const p = levelPuzzle(level, 0);
+    if (p.kind !== "predict") continue;
+    const start = new Set(p.frames[0]);
+    const lonely = [...start].filter((k) => { const [x, y] = k.split(",").map(Number); return neighbours(start, x, y) === 0; });
+    assert.ok(lonely.length <= 1, `level ${level}: ${lonely.length} lonely cells`);
+    const { survive, die, born } = p.answer;
+    if (p.steps === 1 && die.length + born.length >= 3)
+      assert.ok(survive.length && die.length && born.length, `level ${level}: needs survive, die and born`);
+  }
+});
