@@ -1,9 +1,13 @@
 // Color Life — "predict the next step" puzzle game.
-import { levelPuzzle, dailyPuzzle, rushPuzzle, grade, TUTORIAL } from "./puzzles.js";
+import {
+  DIFFICULTIES, difficulty, TUTORIAL, fromTutorial, makePuzzle, puzzleShape, dailyPuzzle, rushConfig, grade,
+  endlessStart, endlessRound, ENDLESS_SIZE,
+} from "./puzzles.js";
 import { key } from "./life.js";
 import * as store from "./store.js";
 import { THEMES, applyTheme } from "./themes.js";
 import { openPlayground, closePlayground } from "./playground.js";
+import { createSim } from "./sim.js";
 
 const $ = (id) => document.getElementById(id);
 const SITE = "https://tvaliashvilisandro.github.io/color-life-app/";
@@ -36,26 +40,32 @@ function toast(msg, ms = 1800) {
 }
 
 // ---------- Navigation (also makes Android's back button return home) ----------
-const SCREENS = ["home", "game", "nolives", "themes", "playground"];
+const SCREENS = ["home", "game", "nolives", "themes", "playground", "difficulty"];
 function show(id) {
   for (const s of SCREENS) $(s).hidden = s !== id;
   current = id;
   refresh();
 }
 function go(id) {
-  if (current === "home" && id !== "home") history.pushState({ s: id }, "");
+  if (id !== current) history.pushState({ s: id }, "");
   show(id);
 }
-function goHome() {
+function leaveScreen() {
   stopRush();
   closePlayground();
+  sim.stop();
   G = null;
   $("rules").hidden = true;
   closeLesson();
-  show("home");
 }
+// Back (button or Android's back key) goes to the previous menu screen.
+// A puzzle can't be resumed from history, so landing on one goes home.
 history.replaceState({ s: "home" }, "");
-window.addEventListener("popstate", goHome);
+window.addEventListener("popstate", (e) => {
+  leaveScreen();
+  const target = e.state?.s || "home";
+  show(["home", "difficulty", "themes"].includes(target) ? target : "home");
+});
 document.querySelectorAll("[data-back]").forEach((b) => (b.onclick = () => history.back()));
 
 // ---------- Status text ----------
@@ -70,15 +80,17 @@ function refresh() {
   if (current === "home") refreshHome();
   if (current === "nolives") refreshNoLives();
   if (current === "themes") renderThemes();
+  if (current === "difficulty") renderDifficulties();
   if (current === "game" && G?.puzzle) updateBar();
 }
 
 function refreshHome() {
   $("homeLives").innerHTML = livesHTML();
   $("homeCoins").textContent = `🪙 ${S.coins}`;
-  $("playSub").textContent = S.level <= TUTORIAL.length
-    ? `Level ${S.level} · Tutorial: ${TUTORIAL[S.level - 1].title}`
-    : `Level ${S.level}`;
+  $("playSub").textContent = S.tutorialDone
+    ? `Choose a difficulty · last: ${difficulty(S.lastDifficulty).name}`
+    : "Starts with a quick 5-step tutorial";
+  $("endlessSub").textContent = S.endlessBest ? `One pattern, step after step · best ${plural(S.endlessBest, "step")}` : "One pattern, step after step";
   const d = store.today(), n = store.dailyNumber(d), done = S.daily.results[d];
   $("dailySub").textContent = done ? `#${n} done ${starText(done.stars)} · new one tomorrow` : `#${n} · today's puzzle is ready`;
   $("dailyBtn").classList.toggle("done", !!done);
@@ -119,7 +131,7 @@ function renderBoard(el, size, live, { marks, outcome, results, flip } = {}) {
   el.innerHTML = html;
 }
 
-// ---------- Tutorial lessons (popup before each of the first 5 levels) ----------
+// ---------- Tutorial lessons (popup before each of the 5 tutorial puzzles) ----------
 // Example grids are 3×3, middle cell = index 4. "on" = live, "" = empty.
 const TAP = {
   survive: '<span class="tap-demo"><i class="on"></i>→<i class="survive">●</i></span><span>Tap a white cell <b>once</b> = 🟢 survives</span>',
@@ -187,47 +199,49 @@ const closeLesson = () => { $("lesson").hidden = true; };
 $("lessonGo").onclick = closeLesson;
 
 // ---------- Puzzle setup ----------
+const sim = createSim($("sim"), $("simCaption"));
+$("simReplay").onclick = () => sim.replay();
+
 function setupPuzzle(puzzle) {
-  Object.assign(G, { puzzle, marks: new Map(), choice: null, phase: "solve" });
-  const before = puzzle.kind === "before";
+  sim.stop();
+  Object.assign(G, { puzzle, marks: new Map(), phase: "solve" });
   $("result").hidden = true;
   $("controls").hidden = false;
+  $("board").hidden = false;
+  $("sim").hidden = true;
+  $("simBar").hidden = true;
   $("board").classList.remove("locked");
-  document.querySelector(".stage").classList.toggle("before", before);
-  for (const id of ["targetLabel", "optionsLabel", "options"]) $(id).hidden = !before;
-  $("legend").hidden = before;
-  $("clearBtn").hidden = before;
-
-  if (before) {
-    G.start = new Set(puzzle.target);
-    renderBoard($("board"), puzzle.size, G.start);
-    renderOptions();
-  } else {
-    G.start = new Set(puzzle.frames[0]);
-    renderSolve();
-  }
-  $("hint").innerHTML = hintFor(puzzle);
+  G.start = new Set(puzzle.frames[0]);
+  renderSolve();
+  $("hint").innerHTML = hintFor();
   updateBar();
-  if (G.mode === "level" && G.level <= TUTORIAL.length) showLesson(G.level);
+  if (G.mode === "tutorial") showLesson(G.step + 1);
 }
 
-function hintFor(p) {
-  if (p.hint) return "";            // tutorial levels explain themselves in the lesson popup
-  if (p.kind === "before") return "Pick the board that turns into this one after <b>one step</b>.";
-  if (p.steps > 1) return "Predict <b>2 steps ahead</b>: mark how each cell ends up after two steps.";
-  if (G.mode === "daily" || (G.mode === "level" && G.level <= 8))
+function hintFor() {
+  if (G.mode === "endless")
+    return "Your answer becomes the next board. The edge is a wall: nothing exists outside it.";
+  if (G.mode === "daily" || (G.mode === "play" && (S.diffStats[G.diff]?.solved || 0) < 3))
     return "Mark every white cell 🟢 or 🔴, and the empty cells that will be born 🟡.";
   return "";
 }
 
 function updateBar() {
   const p = G.puzzle;
-  if (G.mode === "level") {
-    $("gameTitle").textContent = `Level ${G.level}`;
-    $("gameSub").textContent = G.level <= TUTORIAL.length
-      ? `Tutorial ${G.level}/${TUTORIAL.length} · ${TUTORIAL[G.level - 1].title}`
-      : describe(p);
+  if (G.mode === "tutorial") {
+    $("gameTitle").textContent = "Tutorial";
+    $("gameSub").textContent = `Lesson ${G.step + 1} of ${TUTORIAL.length} · ${TUTORIAL[G.step].title}`;
+    $("gameStatus").textContent = "📘";
+  } else if (G.mode === "play") {
+    const d = difficulty(G.diff);
+    $("gameTitle").textContent = `${d.emoji} ${d.name}`;
+    $("gameSub").textContent = `${p.size}×${p.size} board · ${p.frames[0].length} blocks`;
     $("gameStatus").innerHTML = livesHTML();
+  } else if (G.mode === "endless") {
+    const e = G.endless;
+    $("gameTitle").textContent = "♾️ Endless";
+    $("gameSub").textContent = `Step ${e.steps + 1}` + (S.endlessBest ? ` · best ${S.endlessBest}` : "");
+    $("gameStatus").textContent = "❤️".repeat(e.lives) + "🖤".repeat(3 - e.lives);
   } else if (G.mode === "daily") {
     $("gameTitle").textContent = `Daily #${store.dailyNumber(G.date)}`;
     $("gameSub").textContent = new Date(G.date + "T12:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
@@ -239,7 +253,6 @@ function updateBar() {
     $("gameStatus").textContent = `⏱ ${Math.ceil(Math.max(0, G.rush.endAt - now) / 1000)}`;
   }
 }
-const describe = (p) => p.kind === "before" ? "Which came before?" : `${p.size}×${p.size}` + (p.steps > 1 ? " · 2 steps ahead" : "");
 
 // ---------- Painting ----------
 function renderSolve() {
@@ -248,7 +261,7 @@ function renderSolve() {
 
 $("board").addEventListener("click", (e) => {
   const c = e.target.closest(".cell");
-  if (!c || !G || G.phase !== "solve" || G.puzzle.kind !== "predict") return;
+  if (!c || !G || G.phase !== "solve") return;
   const k = c.dataset.k, cur = G.marks.get(k);
   // Live cell: survive → die → unmarked.  Empty cell: born → unmarked.
   const next = G.start.has(k)
@@ -261,41 +274,12 @@ $("board").addEventListener("click", (e) => {
 
 $("clearBtn").onclick = () => { if (G?.phase === "solve") { G.marks.clear(); renderSolve(); } };
 
-function renderOptions() {
-  const box = $("options");
-  box.innerHTML = G.puzzle.options.map((_, i) => `<button data-i="${i}" aria-label="Option ${i + 1}"><div class="board"></div></button>`).join("");
-  [...box.children].forEach((b, i) => {
-    renderBoard(b.firstChild, G.puzzle.size, new Set(G.puzzle.options[i]));
-    b.onclick = () => {
-      if (G.phase !== "solve") return;
-      G.choice = i;
-      [...box.children].forEach((o, j) => o.classList.toggle("picked", j === i));
-    };
-  });
-}
-
 // ---------- Checking ----------
 $("checkBtn").onclick = check;
 
 async function check() {
   if (!G || G.phase !== "solve") return;
   const p = G.puzzle, game = G;
-
-  if (p.kind === "before") {
-    if (G.choice === null) { toast("Pick one of the four boards"); return; }
-    G.phase = "reveal";
-    const ok = G.choice === p.answer;
-    [...$("options").children].forEach((o, i) => {
-      o.classList.remove("picked");
-      if (i === p.answer) o.classList.add("right");
-      else if (i === G.choice) o.classList.add("wrong");
-    });
-    if (!ok) buzz([30, 40, 30]);
-    $("controls").hidden = true;
-    await wait(600);
-    if (G === game) finish({ stars: ok ? 3 : 0, mistakes: ok ? 0 : 1 });
-    return;
-  }
 
   const unmarked = [...G.start].filter((k) => !G.marks.has(k));
   if (unmarked.length) {
@@ -340,29 +324,49 @@ function titleFor(stars) {
   return ["Not quite", "Good", "Great!"][stars];
 }
 
+const COIN_MULT = { "very-easy": 1, easy: 1, medium: 2, hard: 2, "very-hard": 3, extreme: 4 };
+
 function finish(res) {
   if (G.mode === "rush") return rushAnswered(res);
+  if (G.mode === "endless") return endlessAnswered(res);
   const { stars } = res;
+
+  if (G.mode === "tutorial") {
+    const last = G.step === TUTORIAL.length - 1;
+    if (stars > 0 && last) {
+      S.tutorialDone = true;
+      store.save(S);
+      showResult(stars, "Tutorial complete! 🎉", "You know all the rules. Now pick a difficulty.",
+        [["Home", () => history.back()], ["Choose difficulty ▶", () => go("difficulty"), true]]);
+    } else if (stars > 0) {
+      showResult(stars, titleFor(stars), mistakesText(res), [["Skip tutorial", skipTutorial], ["Next lesson ▶", () => playTutorial(G.step + 1), true]]);
+    } else {
+      showResult(stars, "Not quite", `${mistakesText(res)}. Look at the ✓ and ✕ marks, then try again.`,
+        [["Skip tutorial", skipTutorial], ["Try again ▶", () => playTutorial(G.step), true]]);
+    }
+    startSimSoon();
+    return;
+  }
+
   store.recordPerfect(S, stars === 3);
 
-  if (G.mode === "level") {
+  if (G.mode === "play") {
     let text;
     if (stars > 0) {
-      S.coins += stars;
+      const coins = stars * COIN_MULT[G.diff];
+      S.coins += coins;
       S.totalStars += stars;
-      S.level = G.level + 1;
-      S.attempt = 0;
-      text = `${mistakesText(res)} · +${stars} 🪙`;
-      if (G.level === TUTORIAL.length) text += " · Tutorial complete! 🎉";
+      text = `${mistakesText(res)} · +${coins} 🪙`;
     } else {
       store.loseLife(S);
-      S.attempt++;
-      text = G.puzzle.kind === "before" ? "That one doesn't turn into this board · −1 ❤️" : `${mistakesText(res)} · −1 ❤️`;
+      text = `${mistakesText(res)} · −1 ❤️`;
     }
+    store.recordDifficulty(S, G.diff, stars);
     store.save(S);
     updateBar();
-    const next = stars > 0 ? "Next level ▶" : S.lives > 0 ? "Try another ▶" : "Out of hearts";
-    showResult(stars, titleFor(stars), text, [["Home", () => history.back()], [next, playLevel, true]]);
+    const next = S.lives > 0 ? "Next puzzle ▶" : "Out of hearts";
+    showResult(stars, titleFor(stars), text, [["Difficulty", () => history.back()], [next, () => playDifficulty(G.diff), true]]);
+    startSimSoon();
     return;
   }
 
@@ -375,6 +379,19 @@ function finish(res) {
   const streak = store.currentDailyStreak(S, G.date);
   showResult(stars, titleFor(stars), `${mistakesText(res)} · +${coins} 🪙 · 🔥 ${plural(streak, "day")}`,
     [["Home", () => history.back()], ["Share 📤", shareDaily, true]]);
+  startSimSoon();
+}
+
+// After the ✓/✕ marks have had a moment, zoom out and let the answer play on.
+function startSimSoon(delay = 1100) {
+  const game = G;
+  setTimeout(() => {
+    if (G !== game || current !== "game") return;
+    $("board").hidden = true;
+    $("sim").hidden = false;
+    $("simBar").hidden = false;
+    sim.play(new Set(G.puzzle.frames[1]), G.puzzle.size);
+  }, delay);
 }
 
 function showResult(stars, title, text, buttons) {
@@ -396,15 +413,113 @@ function showResult(stars, title, text, buttons) {
   r.style.animation = "none"; void r.offsetWidth; r.style.animation = "";
 }
 
-// ---------- Play (levels) ----------
-function playLevel() {
+// ---------- Play: tutorial, then pick a difficulty ----------
+function startPlay() {
+  if (!S.tutorialDone) playTutorial(0);
+  else go("difficulty");
+}
+$("playBtn").onclick = startPlay;
+
+function playTutorial(stepIndex) {
+  G = { mode: "tutorial", step: stepIndex };
+  go("game");
+  setupPuzzle(fromTutorial(TUTORIAL[stepIndex]));
+}
+function skipTutorial() {
+  S.tutorialDone = true;
+  store.save(S);
+  sim.stop();
+  G = null;
+  history.replaceState({ s: "difficulty" }, "");
+  show("difficulty");
+}
+$("tutorialBtn").onclick = () => playTutorial(0);
+
+function renderDifficulties() {
+  $("diffLives").innerHTML = livesHTML();
+  const list = $("diffList");
+  if (list.childElementCount !== DIFFICULTIES.length) {
+    list.innerHTML = DIFFICULTIES.map((d, i) => `
+      <button class="diff" data-id="${d.id}">
+        <span class="diff-emoji">${d.emoji}</span>
+        <span class="diff-text"><b>${d.name}</b><small>${d.size}×${d.size} board · ${d.live[0]}–${d.live[1]} blocks</small></span>
+        <span class="diff-stats"></span>
+        <span class="diff-meter">${DIFFICULTIES.map((_, j) => j <= i ? `<i style="background:var(--${i < 2 ? "survive" : i < 4 ? "born" : "die"})"></i>` : "<i></i>").join("")}</span>
+      </button>`).join("");
+    list.querySelectorAll(".diff").forEach((b) => (b.onclick = () => playDifficulty(b.dataset.id)));
+  }
+  list.querySelectorAll(".diff").forEach((b) => {
+    const st = S.diffStats[b.dataset.id];
+    b.querySelector(".diff-stats").textContent = st?.solved ? `${st.solved} solved · ${st.perfect} ✨` : "";
+    b.classList.toggle("last", b.dataset.id === S.lastDifficulty);
+  });
+}
+
+// Recent shapes per difficulty, so puzzles don't repeat.
+const recent = {};
+function playDifficulty(id) {
   store.tickLives(S);
   if (S.lives <= 0) { go("nolives"); return; }
-  G = { mode: "level", level: S.level };
+  S.lastDifficulty = id;
+  store.save(S);
+  const cfg = difficulty(id);
+  const list = (recent[id] ||= []);
+  const p = makePuzzle(`${id}-${Date.now()}-${Math.random()}`, cfg, new Set(list));
+  list.push(puzzleShape(p));
+  if (list.length > 12) list.shift();
+  G = { mode: "play", diff: id };
   go("game");
-  setupPuzzle(levelPuzzle(S.level, S.attempt));
+  setupPuzzle(p);
 }
-$("playBtn").onclick = playLevel;
+
+// ---------- Endless: your answer becomes the next puzzle ----------
+const signature = (cells) => [...cells].sort().join(";");
+
+function playEndless() {
+  G = { mode: "endless", endless: { steps: 0, lives: 3, cells: null, seen: new Set() } };
+  go("game");
+  newEndlessPattern();
+}
+$("endlessBtn").onclick = playEndless;
+
+function newEndlessPattern() {
+  const e = G.endless;
+  e.cells = endlessStart(`endless-${Date.now()}-${Math.random()}`, ENDLESS_SIZE);
+  e.seen = new Set();
+  nextEndlessRound();
+}
+
+function nextEndlessRound() {
+  const e = G.endless;
+  const sig = signature(e.cells);
+  const round = e.seen.has(sig) ? null : endlessRound(e.cells, ENDLESS_SIZE);
+  if (!round) {
+    toast("The pattern settled down 🌱 Here's a fresh one", 2200);
+    return newEndlessPattern();
+  }
+  e.seen.add(sig);
+  setupPuzzle(round);
+}
+
+function endlessAnswered(res) {
+  const e = G.endless;
+  e.cells = new Set(G.puzzle.frames[1]);        // the answer is the next board, right or wrong
+  if (res.stars > 0) { e.steps++; S.coins += 1; }
+  else e.lives--;
+  updateBar();
+  if (e.lives > 0) {
+    const text = res.stars > 0 ? `${mistakesText(res)} · step ${e.steps} done` : `${mistakesText(res)} · −1 ❤️`;
+    showResult(res.stars, titleFor(res.stars), text, [["Home", () => history.back()], ["Next step ▶", nextEndlessRound, true]]);
+    store.save(S);
+    return;
+  }
+  const best = e.steps > S.endlessBest;
+  S.endlessBest = Math.max(S.endlessBest, e.steps);
+  store.save(S);
+  showResult(null, best && e.steps ? "New best! 🏆" : "Run over",
+    `You predicted ${plural(e.steps, "step")} · best ${S.endlessBest}`,
+    [["Home", () => history.back()], ["New run", playEndless, true]]);
+}
 
 // ---------- Daily ----------
 function playDaily() {
@@ -425,6 +540,7 @@ function playDaily() {
     showResult(saved.stars, "Come back tomorrow",
       `You got ${starText(saved.stars)} today · next puzzle in ${hoursLeft()}`,
       [["Home", () => history.back()], ["Share 📤", shareDaily, true]]);
+    startSimSoon(600);
   }
 }
 const hoursLeft = () => {
@@ -476,7 +592,7 @@ async function copyText(text) {
 // ---------- Rush ----------
 function playRush() {
   stopRush();
-  G = { mode: "rush", rush: { seed: Date.now().toString(36), index: 0, score: 0, endAt: Date.now() + RUSH_MS, over: false } };
+  G = { mode: "rush", rush: { seed: Date.now().toString(36), index: 0, score: 0, endAt: Date.now() + RUSH_MS, over: false, recent: [] } };
   go("game");
   nextRush();
   rushTimer = setInterval(() => {
@@ -489,7 +605,13 @@ function playRush() {
 $("rushBtn").onclick = playRush;
 $("noLivesRush").onclick = playRush;
 
-function nextRush() { setupPuzzle(rushPuzzle(G.rush.seed, G.rush.index++)); }
+function nextRush() {
+  const r = G.rush;
+  const p = makePuzzle(`rush-${r.seed}-${r.index}`, rushConfig(r.index++), new Set(r.recent));
+  r.recent.push(puzzleShape(p));
+  if (r.recent.length > 10) r.recent.shift();
+  setupPuzzle(p);
+}
 
 function rushAnswered(res) {
   if (G.rush.over) return;
@@ -550,7 +672,7 @@ $("freeLifeBtn").onclick = async () => {
     store.gainLife(S);
     store.save(S);
   }
-  playLevel();
+  playDifficulty(S.lastDifficulty);
 };
 
 // ---------- Themes ----------
@@ -626,7 +748,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 // ---------- Start ----------
-setInterval(() => { if (current !== "game" || G?.mode === "level") refresh(); }, 1000);
+setInterval(() => { if (current !== "game" || G?.mode === "play") refresh(); }, 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 show("home");
 

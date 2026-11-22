@@ -1,83 +1,48 @@
 // Puzzle generation. Every puzzle comes from a seed, so it can be rebuilt
-// exactly (daily puzzle = date seed, levels = level + attempt seed).
+// exactly (the daily puzzle uses the date as its seed).
 import { makeRng } from "./rng.js";
 import { key, parse, fromList, step, inBoard, sameCells, outcome, neighbours, shapeKey } from "./life.js";
 
+// ---------- Difficulties ----------
+// size: board width · area: the centred square where white blocks are placed
+// live: how many white blocks (density) · changes: cells that die or are born
+// slack: mistakes allowed per star (2★ ≤ slack, 1★ ≤ 2×slack)
+export const DIFFICULTIES = [
+  { id: "very-easy", name: "Very easy", emoji: "🌱", size: 5, area: 3, live: [3, 4], changes: [1, 3], slack: 1 },
+  { id: "easy", name: "Easy", emoji: "🙂", size: 6, area: 4, live: [4, 6], changes: [2, 5], slack: 1 },
+  { id: "medium", name: "Medium", emoji: "🧠", size: 7, area: 5, live: [6, 9], changes: [4, 8], slack: 1 },
+  { id: "hard", name: "Hard", emoji: "🔥", size: 8, area: 6, live: [9, 13], changes: [7, 12], slack: 2 },
+  { id: "very-hard", name: "Very hard", emoji: "💀", size: 9, area: 7, live: [13, 18], changes: [10, 16], slack: 3 },
+  { id: "extreme", name: "Extreme", emoji: "☄️", size: 10, area: 8, live: [18, 26], changes: [14, 24], slack: 3 },
+];
+export const difficulty = (id) => DIFFICULTIES.find((d) => d.id === id) || DIFFICULTIES[0];
+
 // ---------- Tutorial: one rule at a time ----------
 export const TUTORIAL = [
-  {
-    title: "Survive",
-    hint: "A live cell with <b>2 or 3</b> live neighbours <b>survives</b>. Tap each white cell until it's 🟢.",
-    size: 5, cells: [[1, 1], [2, 1], [1, 2], [2, 2]],
-  },
-  {
-    title: "Lonely cells die",
-    hint: "A live cell with <b>0 or 1</b> live neighbours <b>dies</b>. Tap a white cell twice for 🔴.",
-    size: 5, cells: [[0, 0], [1, 0], [0, 1], [1, 1], [3, 3]],
-  },
-  {
-    title: "Birth",
-    hint: "An empty cell with <b>exactly 3</b> live neighbours is <b>born</b>. Tap an empty cell for 🟡.",
-    size: 5, cells: [[1, 1], [2, 1], [1, 2]],
-  },
-  {
-    title: "Crowded cells die",
-    hint: "A live cell with <b>4 or more</b> live neighbours <b>dies</b> too. Count carefully!",
-    size: 5, cells: [[1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [3, 2]],
-  },
-  {
-    title: "Put it together",
-    hint: "Use all three rules: what survives 🟢, what dies 🔴, and what is born 🟡?",
-    size: 5, cells: [[2, 1], [2, 2], [2, 3]],
-  },
+  { title: "Survive", size: 5, cells: [[1, 1], [2, 1], [1, 2], [2, 2]] },
+  { title: "Lonely cells die", size: 5, cells: [[0, 0], [1, 0], [0, 1], [1, 1], [3, 3]] },
+  { title: "Birth", size: 5, cells: [[1, 1], [2, 1], [1, 2]] },
+  { title: "Crowded cells die", size: 5, cells: [[1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [3, 2]] },
+  { title: "Put it together", size: 5, cells: [[2, 1], [2, 2], [2, 3]] },
 ];
 
-// ---------- Difficulty curve ----------
-const lerp = (a, b, t) => a + (b - a) * Math.min(1, Math.max(0, t));
-
-export function levelConfig(level) {
-  if (level <= TUTORIAL.length) return { type: "tutorial" };
-  if (level <= 15) return predict(5, 1, 2, 5, (level - 6) / 9);
-  if (level <= 30) return predict(6, 1, 4, 8, (level - 16) / 14);
-  if (level <= 50) {
-    if (level % 4 === 0) return predict(5, 2, 2, 6, (level - 31) / 19);
-    return predict(7, 1, 6, 11, (level - 31) / 19);
-  }
-  if (level % 5 === 0) return { type: "before", size: 6, minChanges: 3, maxChanges: 8 };
-  if (level % 3 === 0) return predict(6, 2, 3, 8, (level - 51) / 50);
-  return predict(8, 1, 8, 15, (level - 51) / 50);
-}
-
-function predict(size, steps, minChanges, maxChanges, t) {
-  return { type: "predict", size, steps, minChanges, maxChanges, target: lerp(minChanges, maxChanges, t) };
-}
-
-export const DAILY_CONFIG = predict(6, 1, 5, 9, 0.5);
-
-export function rushConfig(index) {
-  if (index < 4) return predict(5, 1, 2, 4, index / 4);
-  if (index < 10) return predict(5, 1, 3, 6, (index - 4) / 6);
-  return predict(6, 1, 4, 8, (index - 10) / 10);
-}
-
-// ---------- Generators ----------
-// How many live cells a board starts with, by board size.
-const LIVE_RANGE = { 5: [4, 7], 6: [5, 9], 7: [6, 12], 8: [8, 15] };
+// ---------- Board generation ----------
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 
-// Grows 1–3 connected clumps so boards look like shapes, not scattered dots.
-function randomPattern(rng, size) {
-  const margin = size >= 6 ? 1 : 0;
-  const lo = margin, hi = size - margin;          // cells live in [lo, hi)
-  const [minLive, maxLive] = LIVE_RANGE[size] || [Math.round(size * size * 0.15), Math.round(size * size * 0.25)];
+// Grows 1–3 connected clumps inside the centred area, so boards look like
+// shapes, not scattered dots. The area leaves a 1-cell border, so births
+// always stay on the board.
+function randomPattern(rng, cfg) {
+  const lo = Math.floor((cfg.size - cfg.area) / 2), hi = lo + cfg.area;   // cells live in [lo, hi)
+  const [minLive, maxLive] = cfg.live;
   const want = minLive + rng.int(maxLive - minLive + 1);
-  const blobs = 1 + rng.int(size >= 7 ? 3 : 2);
+  const blobs = 1 + rng.int(cfg.area >= 6 ? 3 : 2);
   const cells = new Set();
   for (let b = 0; b < blobs; b++) {
     const blob = [[lo + rng.int(hi - lo), lo + rng.int(hi - lo)]];
     cells.add(key(...blob[0]));
     const target = Math.ceil((want - cells.size) / (blobs - b)) + cells.size;
-    for (let t = 0; t < 60 && cells.size < target; t++) {
+    for (let t = 0; t < 80 && cells.size < target; t++) {
       const [x, y] = blob[rng.int(blob.length)];
       const [dx, dy] = DIRS[rng.int(rng.chance(0.65) ? 4 : 8)];   // mostly orthogonal growth
       const nx = x + dx, ny = y + dy;
@@ -89,158 +54,105 @@ function randomPattern(rng, size) {
   return cells;
 }
 
-// How hard a puzzle feels: more changes, more births (harder to spot) and
-// more crowding (more counting) all make it harder.
-export function difficulty(start, end) {
-  const o = outcome(start, end);
-  let crowd = 0;
-  for (const k of start) { const [x, y] = parse(k); crowd += neighbours(start, x, y); }
-  crowd = start.size ? crowd / start.size : 0;
-  const changes = o.die.size + o.born.size;
-  return { changes, births: o.born.size, crowd, score: changes + 0.5 * o.born.size + 0.4 * crowd };
-}
-
-function frames(start, steps, size) {
-  const out = [start];
-  for (let i = 0; i < steps; i++) {
-    const next = step(out[out.length - 1]);
-    if (!next.size || !inBoard(next, size)) return null;
-    out.push(next);
-  }
-  return out;
-}
-
 const lonelyCells = (cells) => [...cells].filter((k) => { const [x, y] = parse(k); return neighbours(cells, x, y) === 0; }).length;
 
-// Rejects boring boards: too small, dies out, nothing changes, mostly lonely
-// cells, or (for one-step puzzles) not all three outcomes to think about.
-function acceptable(fr, cfg) {
-  const start = fr[0], end = fr[fr.length - 1];
-  if (start.size < 3) return null;
-  if (sameCells(start, end)) return null;
-  for (let i = 1; i < fr.length; i++) if (sameCells(fr[i - 1], fr[i])) return null;
+// Rejects boring or off-spec boards: wrong number of blocks, nothing changes,
+// mostly lonely cells, or (with 3+ changes) not all three outcomes to think about.
+function acceptable(start, next, cfg) {
+  if (start.size < cfg.live[0] || start.size > cfg.live[1]) return null;
+  if (!next.size || !inBoard(next, cfg.size) || sameCells(start, next)) return null;
   if (lonelyCells(start) > 1) return null;
-  const d = difficulty(start, end);
-  if (d.changes < cfg.minChanges || d.changes > cfg.maxChanges) return null;
-  if (fr.length === 2 && d.changes >= 3) {
-    const o = outcome(start, end);
-    if (!o.survive.size || !o.die.size || !o.born.size) return null;
-  }
-  return d;
+  const o = outcome(start, next);
+  const changes = o.die.size + o.born.size;
+  if (changes < cfg.changes[0] || changes > cfg.changes[1]) return null;
+  if (changes >= 3 && (!o.survive.size || !o.die.size || !o.born.size)) return null;
+  return o;
 }
 
 // `avoid`: shape keys of recent puzzles, so the same shape doesn't come back
 // (even rotated or moved).
-export function makePredict(seed, cfg, avoid = new Set()) {
+export function makePuzzle(seed, cfg, avoid = new Set()) {
   const rng = makeRng(seed);
-  const target = cfg.target ?? (cfg.minChanges + cfg.maxChanges) / 2;
-  const found = [];
-  for (let tries = 0; tries < 4000 && found.length < 12; tries++) {
-    const start = randomPattern(rng, cfg.size);
+  for (let tries = 0; tries < 6000; tries++) {
+    const start = randomPattern(rng, cfg);
     if (avoid.has(shapeKey(start))) continue;
-    const fr = frames(start, cfg.steps, cfg.size);
-    if (!fr) continue;
-    const d = acceptable(fr, cfg);
-    if (d) found.push({ fr, d, dist: Math.abs(d.changes - target) });
+    const next = step(start);
+    if (acceptable(start, next, cfg)) return build(start, next, cfg.size, cfg.slack);
   }
-  if (!found.length) return fromTutorial(TUTORIAL[4]);   // never expected; keeps the game playable
-  // Pick at random among the candidates nearest the target difficulty, for variety.
-  const best = Math.min(...found.map((f) => f.dist));
-  const near = found.filter((f) => f.dist <= best + 1);
-  const pick = near[rng.int(near.length)];
-  return build(pick.fr, cfg.size, cfg.steps, pick.d);
+  return fromTutorial(TUTORIAL[4]);   // never expected; keeps the game playable
+}
+
+function build(start, next, size, slack = 1) {
+  const o = outcome(start, next);
+  return {
+    size, slack,
+    frames: [[...start], [...next]],
+    answer: { survive: [...o.survive], die: [...o.die], born: [...o.born] },
+  };
 }
 
 export function fromTutorial(t) {
   const start = fromList(t.cells);
-  const fr = frames(start, 1, t.size);
-  return { ...build(fr, t.size, 1, difficulty(fr[0], fr[1])), title: t.title, hint: t.hint };
+  return { ...build(start, step(start), t.size), title: t.title };
 }
 
-function build(fr, size, steps, d) {
-  const start = fr[0], end = fr[fr.length - 1];
-  const o = outcome(start, end);
-  return {
-    kind: "predict", size, steps,
-    frames: fr.map((s) => [...s]),
-    answer: { survive: [...o.survive], die: [...o.die], born: [...o.born] },
-    difficulty: d,
-  };
+export const puzzleShape = (p) => shapeKey(new Set(p.frames[0]));
+export const dailyPuzzle = (dateStr) => makePuzzle(`daily-${dateStr}`, difficulty("medium"));
+
+// Rush starts very easy and gets harder as you go.
+export const rushConfig = (index) => difficulty(index < 5 ? "very-easy" : index < 12 ? "easy" : "medium");
+
+// ---------- Endless: one pattern, step after step ----------
+// The board edge is a wall: cells outside it never exist.
+export const ENDLESS_SIZE = 8;
+export const ENDLESS_SLACK = 2;
+
+export function stepWalled(cells, size) {
+  const next = step(cells);
+  for (const k of next) {
+    const [x, y] = parse(k);
+    if (x < 0 || y < 0 || x >= size || y >= size) next.delete(k);
+  }
+  return next;
 }
 
-// "Which of these 4 boards came before this one?"
-export function makeBefore(seed, cfg, avoid = new Set()) {
+const signature = (cells) => [...cells].sort().join(";");
+
+// How many steps a pattern keeps changing before it dies or repeats itself.
+export function lifetime(cells, size, cap = 60) {
+  const seen = new Set([signature(cells)]);
+  let c = cells;
+  for (let g = 0; g < cap; g++) {
+    const next = stepWalled(c, size);
+    const sig = signature(next);
+    if (!next.size || seen.has(sig)) return g;
+    seen.add(sig);
+    c = next;
+  }
+  return cap;
+}
+
+// Picks a starting pattern that evolves for a long time (30–60 steps).
+export function endlessStart(seed, size = ENDLESS_SIZE) {
   const rng = makeRng(seed);
-  for (let tries = 0; tries < 3000; tries++) {
-    const start = randomPattern(rng, cfg.size);
-    if (avoid.has(shapeKey(start))) continue;
-    const fr = frames(start, 1, cfg.size);
-    if (!fr || !acceptable(fr, cfg)) continue;
-    const target = fr[1];
-    const options = [start];
-    for (let t = 0; t < 400 && options.length < 4; t++) {
-      const d = new Set(start);
-      const flips = 1 + rng.int(2);
-      for (let f = 0; f < flips; f++) {
-        const k = key(rng.int(cfg.size), rng.int(cfg.size));
-        d.has(k) ? d.delete(k) : d.add(k);
-      }
-      if (d.size < 3) continue;
-      if (sameCells(step(d), target)) continue;            // must not also be a right answer
-      if (options.some((o) => sameCells(o, d))) continue;
-      options.push(d);
-    }
-    if (options.length < 4) continue;
-    const order = rng.shuffle([0, 1, 2, 3]);
-    return {
-      kind: "before", size: cfg.size,
-      target: [...target],
-      options: order.map((i) => [...options[i]]),
-      answer: order.indexOf(0),
-    };
+  let best = null;
+  for (let tries = 0, found = 0; tries < 400 && found < 6; tries++) {
+    const cells = new Set();
+    const want = Math.round(size * size * (0.2 + rng.next() * 0.12));
+    for (let t = 0; t < 400 && cells.size < want; t++) cells.add(key(1 + rng.int(size - 2), 1 + rng.int(size - 2)));
+    if (lonelyCells(cells) > 2) continue;
+    const life = lifetime(cells, size);
+    if (!best || life > best.life) best = { cells, life };
+    if (life >= 30) found++;
   }
-  return null;
+  return best.cells;
 }
 
-export function makePuzzle(seed, cfg, avoid) {
-  if (cfg.type === "before") return makeBefore(seed, cfg, avoid) || makePredict(seed, predict(6, 1, 3, 8, 0.5), avoid);
-  return makePredict(seed, cfg, avoid);
-}
-
-// The shape a player looks at: the starting board, or the right answer of a "before" puzzle.
-export const puzzleShape = (p) => shapeKey(new Set(p.kind === "before" ? p.options[p.answer] : p.frames[0]));
-
-const RECENT = 10;
-const levelCache = new Map();
-
-export function levelPuzzle(level, attempt = 0) {
-  const id = level + ":" + attempt;
-  if (levelCache.has(id)) return levelCache.get(id);
-  const cfg = levelConfig(level);
-  let p;
-  if (cfg.type === "tutorial") p = fromTutorial(TUTORIAL[level - 1]);
-  else {
-    // Don't reuse the shapes of the last few levels, or of earlier tries at this one.
-    const avoid = new Set();
-    for (let l = Math.max(TUTORIAL.length + 1, level - RECENT); l < level; l++) avoid.add(puzzleShape(levelPuzzle(l, 0)));
-    for (let a = Math.max(0, attempt - RECENT); a < attempt; a++) avoid.add(puzzleShape(levelPuzzle(level, a)));
-    p = makePuzzle(`level-${level}-${attempt}`, cfg, avoid);
-  }
-  levelCache.set(id, p);
-  return p;
-}
-
-export const dailyPuzzle = (dateStr) => makePredict(`daily-${dateStr}`, DAILY_CONFIG);
-
-const rushCache = new Map();
-export function rushPuzzle(runSeed, index) {
-  if (rushCache.get("seed") !== runSeed) { rushCache.clear(); rushCache.set("seed", runSeed); }
-  if (rushCache.has(index)) return rushCache.get(index);
-  const avoid = new Set();
-  for (let i = Math.max(0, index - RECENT); i < index; i++) avoid.add(puzzleShape(rushPuzzle(runSeed, i)));
-  const p = makePredict(`rush-${runSeed}-${index}`, rushConfig(index), avoid);
-  rushCache.set(index, p);
-  return p;
+// One Endless round: predict the next step of `cells`. Null when the pattern has died out.
+export function endlessRound(cells, size = ENDLESS_SIZE) {
+  const next = stepWalled(cells, size);
+  if (!next.size) return null;
+  return build(cells, next, size, ENDLESS_SLACK);
 }
 
 // ---------- Scoring ----------
@@ -259,7 +171,12 @@ export function grade(puzzle, marks) {
   for (const [k, m] of marks) if (!truth.has(k)) cells.set(k, "wrong");   // false birth
   let mistakes = 0;
   for (const v of cells.values()) if (v !== "ok") mistakes++;
-  return { cells, mistakes, stars: starsFor(mistakes) };
+  return { cells, mistakes, stars: starsFor(mistakes, puzzle.slack || 1) };
 }
 
-export const starsFor = (mistakes) => (mistakes === 0 ? 3 : mistakes === 1 ? 2 : mistakes === 2 ? 1 : 0);
+export function starsFor(mistakes, slack = 1) {
+  if (mistakes === 0) return 3;
+  if (mistakes <= slack) return 2;
+  if (mistakes <= 2 * slack) return 1;
+  return 0;
+}

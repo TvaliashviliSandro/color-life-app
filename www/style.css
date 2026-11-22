@@ -159,7 +159,6 @@ button.wide { width: 100%; }
   min-height: 0;
   overflow-y: auto;
 }
-.target-label { margin: 0; color: var(--muted); font-size: 13px; }
 
 .board {
   --gap: clamp(3px, 1.2vmin, 6px);
@@ -174,8 +173,6 @@ button.wide { width: 100%; }
   border-radius: 16px;
   touch-action: manipulation;
 }
-.board.small { width: min(60%, 240px, 26vh); }
-.stage.before > .board { width: min(56%, 220px, 24vh); flex: none; }
 
 .cell {
   position: relative;
@@ -232,17 +229,6 @@ button.wide { width: 100%; }
 .badge.wrong { background: var(--die); }
 .badge.missed { background: var(--born); color: #000; }
 
-.options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(100%, 340px, 40vh); flex: none; }
-.options button {
-  padding: 6px;
-  border-radius: 14px;
-  border: 2px solid var(--line);
-  background: var(--panel);
-}
-.options .board, .stage.before .options .board { width: 100%; border: 0; padding: 0; background: transparent; border-radius: 8px; --gap: 2px; }
-.options button.picked { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
-.options button.right { border-color: var(--survive); box-shadow: 0 0 0 2px var(--survive); }
-.options button.wrong { border-color: var(--die); opacity: .7; }
 
 .controls { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; }
 .legend { margin: 0; text-align: center; color: var(--muted); font-size: 13px; }
@@ -277,6 +263,58 @@ button.wide { width: 100%; }
 .empty-state .big { align-items: center; text-align: center; }
 .big-emoji { font-size: 64px; }
 .empty-state p { margin: 0; }
+
+/* ---------- Visualization after a puzzle ---------- */
+.sim {
+  width: min(100%, 440px, 52vh);
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  animation: sim-in .3s ease-out;
+}
+@keyframes sim-in { from { opacity: .4; } }
+.sim-bar {
+  width: min(100%, 440px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+button.link {
+  background: transparent;
+  border: 0;
+  padding: 6px 4px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+}
+button.link.center { display: block; margin: 14px auto 0; font-size: 14px; }
+
+/* ---------- Difficulty picker ---------- */
+.diff-list { display: grid; gap: 10px; margin-top: 6px; }
+.diff {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "emoji text stats" "emoji meter meter";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 6px;
+  padding: 12px 16px;
+  text-align: left;
+  border-radius: 14px;
+}
+.diff.last { border-color: var(--accent); }
+.diff-emoji { grid-area: emoji; font-size: 28px; }
+.diff-text { grid-area: text; display: flex; flex-direction: column; }
+.diff-text b { font-size: 17px; }
+.diff-text small { color: var(--muted); font-size: 12px; }
+.diff-stats { grid-area: stats; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.diff-meter { grid-area: meter; display: flex; gap: 4px; }
+.diff-meter i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
 
 /* ---------- Playground ---------- */
 .screen.playground { max-width: none; padding-left: 0; padding-right: 0; padding-bottom: 0; overflow: hidden; }

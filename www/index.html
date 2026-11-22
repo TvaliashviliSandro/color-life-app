@@ -35,10 +35,13 @@
 
     <nav class="menu">
       <button class="big primary" id="playBtn">
-        <span class="big-title">▶ Play</span><span class="big-sub" id="playSub">Level 1</span>
+        <span class="big-title">▶ Play</span><span class="big-sub" id="playSub">Choose a difficulty</span>
       </button>
       <button class="big" id="dailyBtn">
         <span class="big-title">📅 Daily puzzle</span><span class="big-sub" id="dailySub"></span>
+      </button>
+      <button class="big" id="endlessBtn">
+        <span class="big-title">♾️ Endless</span><span class="big-sub" id="endlessSub">One pattern, step after step</span>
       </button>
       <button class="big" id="rushBtn">
         <span class="big-title">⚡ Rush</span><span class="big-sub" id="rushSub"></span>
@@ -71,10 +74,12 @@
     <p id="hint" class="hint"></p>
 
     <div class="stage">
-      <p id="targetLabel" class="target-label" hidden>This board…</p>
       <div id="board" class="board"></div>
-      <p id="optionsLabel" class="target-label" hidden>…came from which one?</p>
-      <div id="options" class="options" hidden></div>
+      <canvas id="sim" class="sim" hidden></canvas>
+      <div class="sim-bar" id="simBar" hidden>
+        <span id="simCaption"></span>
+        <button id="simReplay" class="link">↺ Watch again</button>
+      </div>
     </div>
 
     <div class="controls" id="controls">
@@ -94,6 +99,17 @@
       <p id="resultText"></p>
       <div class="pair" id="resultButtons"></div>
     </div>
+  </section>
+
+  <!-- ============ Difficulty picker ============ -->
+  <section id="difficulty" class="screen" hidden>
+    <header class="bar">
+      <button class="icon" data-back aria-label="Back">←</button>
+      <div class="bar-title"><b>Choose difficulty</b><span>Bigger boards, more blocks</span></div>
+      <span class="pill" id="diffLives">❤️ 5</span>
+    </header>
+    <div id="diffList" class="diff-list"></div>
+    <button id="tutorialBtn" class="link center">📘 Replay the tutorial</button>
   </section>
 
   <!-- ============ Out of hearts ============ -->
@@ -170,7 +186,8 @@
       </ul>
       <h3 class="modes-title">Modes</h3>
       <ul class="modes">
-        <li><b>▶ Play</b> Endless levels that slowly get harder. A puzzle with 3+ mistakes costs a heart.</li>
+        <li><b>▶ Play</b> Pick a difficulty from Very easy to Extreme: harder means a bigger board with more blocks. Too many mistakes cost a heart. After each puzzle, watch the board zoom out and play on.</li>
+        <li><b>♾️ Endless</b> Your answer becomes the next puzzle, so you follow one pattern step after step. You have 3 lives per run. Here the board's edge is a wall: nothing exists outside it.</li>
         <li><b>📅 Daily</b> Everyone gets the same puzzle today. Share your result and keep your streak.</li>
         <li><b>⚡ Rush</b> Solve as many as you can in 60 seconds. Only perfect answers count.</li>
         <li><b>🧪 Playground</b> Free play, no scores. Draw any pattern on an endless board and press Start to watch the rules play out.

@@ -7,7 +7,10 @@ export const LIFE_REGEN_MS = 15 * 60 * 1000;
 const LAUNCH = "2026-11-22";      // Daily #1
 
 const defaults = () => ({
-  level: 1, attempt: 0,
+  tutorialDone: false,
+  lastDifficulty: "very-easy",
+  diffStats: {},             // difficulty id -> { solved, perfect, stars }
+  endlessBest: 0,
   coins: 0, totalStars: 0,
   lives: MAX_LIVES, livesAt: Date.now(),
   perfectStreak: 0, bestPerfect: 0,
@@ -23,7 +26,13 @@ export function load() {
   let s = defaults();
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const saved = JSON.parse(raw); s = { ...s, ...saved, daily: { ...s.daily, ...saved.daily } }; }
+    if (raw) {
+      const saved = JSON.parse(raw);
+      // Saves from the old level system: anyone past level 5 has done the tutorial.
+      if (saved.level > 5) saved.tutorialDone = true;
+      delete saved.level; delete saved.attempt;
+      s = { ...s, ...saved, daily: { ...s.daily, ...saved.daily } };
+    }
   } catch (_) {}
   return s;
 }
@@ -53,6 +62,14 @@ export function gainLife(s, now = Date.now()) {
   tickLives(s, now);
   s.lives = Math.min(MAX_LIVES, s.lives + 1);
   if (s.lives >= MAX_LIVES) s.livesAt = now;
+}
+
+// ---------- Per-difficulty stats ----------
+export function recordDifficulty(s, id, stars) {
+  const d = (s.diffStats[id] ||= { solved: 0, perfect: 0, stars: 0 });
+  if (stars > 0) d.solved++;
+  if (stars === 3) d.perfect++;
+  d.stars += stars;
 }
 
 // ---------- Streaks ----------
