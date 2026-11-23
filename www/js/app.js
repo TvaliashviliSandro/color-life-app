@@ -398,6 +398,7 @@ function updateBar() {
     const now = G.rush.pausedAt || Date.now();
     $("gameStatus").innerHTML = `${icon("timer")}${Math.ceil(Math.max(0, G.rush.endAt - now) / 1000)}`;
   }
+  $("gameStatus").hidden = !$("gameStatus").innerHTML.trim();   // no empty pill where the hearts used to be
 }
 
 // ---------- Painting ----------
