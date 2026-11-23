@@ -63,12 +63,11 @@ jobs:
             **Android:** download `ColorLife.apk` below and open it on your phone (allow "Install unknown apps" when asked).
             **iPhone:** open https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ in Safari → Share → Add to Home Screen.
 
-  web:
-    name: Web app (GitHub Pages)
+  # The web app is prepared and deployed in two separate jobs (GitHub's recommended
+  # setup): the deploy only starts once the upload has fully finished.
+  web-build:
+    name: Web app (prepare)
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       # Needs Settings → Pages → Source: "GitHub Actions" turned on once.
@@ -76,5 +75,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: www
+
+  web:
+    name: Web app (GitHub Pages)
+    needs: web-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
