@@ -11,6 +11,10 @@ const defaults = () => ({
   lastDifficulty: "very-easy",
   diffStats: {},             // difficulty id -> { solved, perfect, stars }
   endlessBest: 0,
+  playtestGrant: false,      // one-time pile of coins for the playtest build
+  adCoins: { date: null, count: 0 },
+  dailyBonus: null,          // date the shop's daily bonus was last claimed
+  abilityUses: {},           // ability id -> times used (playtest feedback)
   coins: 0, totalStars: 0,
   lives: MAX_LIVES, livesAt: Date.now(),
   perfectStreak: 0, bestPerfect: 0,
@@ -34,6 +38,8 @@ export function load() {
       s = { ...s, ...saved, daily: { ...s.daily, ...saved.daily } };
     }
   } catch (_) {}
+  // Playtest build: everyone gets plenty of coins to try abilities, continues and themes.
+  if (!s.playtestGrant) { s.coins += 5000; s.playtestGrant = true; }
   return s;
 }
 

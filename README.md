@@ -16,6 +16,21 @@ next step, then watch it happen. Each puzzle takes 10–30 seconds.
   evolve, with colour hints for what survives, dies and is born next.
 - **🎨 Themes:** stars earn coins; coins unlock colour themes.
 
+## Playtest build (current)
+
+Ads and purchases are **mocked** so the full experience can be tried before the Play Store:
+
+- Every puzzle has **3 hearts**; each wrong Check costs one and flags the wrong cells (missed births only as a count).
+- Out of hearts → **Continue**: first a fake rewarded ad, then 50, 100, 200… coins. Or give up and see the answer.
+- **Abilities** cost coins (Peek, Counter, Paintball, Rocket, Birth scan, Shield). Allowed in Play, Daily and Endless, not Rush.
+  A shared Daily result says which abilities were used.
+- **End-of-puzzle popup**: a replay of where the pattern goes, coins earned, and "Check mistakes" with a plain-language
+  reason for every wrong cell.
+- **Shop**: fake coin packs with a fake Google Play sheet, a fake "watch an ad" for coins, and a daily bonus.
+  Every player gets 5,000 coins once. Nothing is charged.
+
+Real ads (AdMob rewarded) and real coin packs (Google Play Billing) replace the mocks once the app is on the Play Store.
+
 It ships as an Android `.apk` and an installable web app for iPhone, both without an app store.
 Every push to `main` rebuilds both automatically (see `.github/workflows/build.yml`).
 

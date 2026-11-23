@@ -32,6 +32,17 @@ const P = {
   trophy: '<path d="M8 4.5h8v5a4 4 0 0 1-8 0z"/><path d="M8 6.5H5a2.5 2.5 0 0 0 3 3M16 6.5h3a2.5 2.5 0 0 1-3 3M12 13.5v3M8.5 20h7M9.5 20l.5-3.5h4l.5 3.5"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  hash: '<path d="M9.5 4L8 20M16 4l-1.5 16M4.5 9h15.5M4 15h15.5"/>',
+  splat: '<circle cx="12" cy="12" r="4.8"/><circle cx="18.6" cy="6" r="1.6"/><circle cx="5.2" cy="17.8" r="1.3"/><circle cx="18.6" cy="17.6" r="1.1"/><circle cx="6" cy="6.4" r="1.4"/>',
+  rocket: '<path d="M12 3.5c3 2 4.5 5 4.5 8.5v4h-9v-4c0-3.5 1.5-6.5 4.5-8.5z"/><circle cx="12" cy="10" r="1.6"/><path d="M7.5 13.5L5 16v3l2.5-1.5M16.5 13.5L19 16v3l-2.5-1.5M10.5 19.5h3"/>',
+  radar: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 12l5.5-5.5"/>',
+  shield: '<path d="M12 3.5l7 2.8v5.2c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6.3z"/>',
+  bag: '<path d="M5.5 8h13l-1 12h-11z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>',
+  tv: '<rect x="3.5" y="5.5" width="17" height="12" rx="2.5"/><path d="M10.5 9.3v4.9l4-2.45z"/><path d="M8.5 20.5h7"/>',
+  gift: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M3.5 9h17M12 9v11M12 9c-1-3-5-4-5-1.5S10 9 12 9zm0 0c1-3 5-4 5-1.5S14 9 12 9z"/>',
+  lock: '<rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  flag: '<path d="M6 21V4.5M6 4.5h11l-2 4 2 4H6"/>',
 };
 
 export function icon(name, cls = "") {

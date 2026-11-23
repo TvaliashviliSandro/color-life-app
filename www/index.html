@@ -19,8 +19,8 @@
   <!-- ============ Home ============ -->
   <section id="home" class="screen">
     <header class="top">
-      <span class="pill hearts" id="homeLives"></span>
-      <span class="pill coins" id="homeCoins"></span>
+      <span class="playtest-tag">Playtest build</span>
+      <button class="pill coins" data-shop id="homeCoins"></button>
     </header>
 
     <div class="logo">
@@ -59,9 +59,10 @@
         <span class="mode-text"><b>Playground</b><small>Draw cells and watch them evolve</small></span>
         <i data-icon="chevron" class="chev"></i>
       </button>
-      <div class="pair">
+      <div class="pair trio">
+        <button class="soft" data-shop><i data-icon="bag"></i>Shop</button>
         <button class="soft" id="themesBtn"><i data-icon="palette"></i>Themes</button>
-        <button class="soft" id="rulesBtn"><i data-icon="help"></i>How to play</button>
+        <button class="soft" id="rulesBtn"><i data-icon="help"></i>Rules</button>
       </div>
     </nav>
 
@@ -85,29 +86,21 @@
 
     <div class="stage">
       <div id="board" class="board"></div>
-      <canvas id="sim" class="sim" hidden></canvas>
-      <div class="sim-bar" id="simBar" hidden>
-        <span id="simCaption"></span>
-        <button id="simReplay" class="link"><i data-icon="replay"></i>Watch again</button>
-      </div>
     </div>
 
+    <div class="target-banner" id="targetBanner" hidden>
+      <span id="targetText"></span>
+      <button class="soft small" id="targetFlip" hidden>Column</button>
+      <button class="soft small" id="targetCancel">Cancel</button>
+    </div>
+
+    <div class="abilities" id="abilities"></div>
+
     <div class="controls" id="controls">
-      <p class="legend" id="legend">
-        Tap a white cell: <i class="sw survive"></i> survives, twice <i class="sw die"></i> dies.
-        Tap an empty cell: <i class="sw born"></i> born.
-      </p>
       <div class="pair">
         <button class="soft" id="clearBtn"><i data-icon="eraser"></i>Clear</button>
         <button id="checkBtn" class="primary"><i data-icon="check"></i>Check</button>
       </div>
-    </div>
-
-    <div id="result" class="result" hidden>
-      <div class="stars" id="stars"><i data-icon="star"></i><i data-icon="star"></i><i data-icon="star"></i></div>
-      <h2 id="resultTitle"></h2>
-      <p id="resultText"></p>
-      <div class="pair" id="resultButtons"></div>
     </div>
   </section>
 
@@ -116,28 +109,32 @@
     <header class="bar">
       <button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button>
       <div class="bar-title"><b>Choose difficulty</b><span>Bigger boards, more blocks</span></div>
-      <span class="pill hearts" id="diffLives"></span>
+      <button class="pill coins" data-shop id="diffCoins"></button>
     </header>
     <div id="diffList" class="diff-list"></div>
     <button id="tutorialBtn" class="link center"><i data-icon="book"></i>Replay the tutorial</button>
   </section>
 
-  <!-- ============ Out of hearts ============ -->
-  <section id="nolives" class="screen" hidden>
-    <header class="bar"><button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button><div class="bar-title"><b>Out of hearts</b></div><span></span></header>
-    <div class="empty-state">
-      <div class="empty-icon"><i data-icon="heart"></i></div>
-      <p>Next heart in <b id="nextLife">15:00</b></p>
-      <button class="mode primary center-mode" id="freeLifeBtn">
-        <span class="mode-icon"><i data-icon="heart"></i></span>
-        <span class="mode-text"><b class="big-title">Get a heart</b><small id="freeLifeSub"></small></span>
-      </button>
-      <p class="muted">The daily puzzle and Rush don't use hearts.</p>
-      <div class="pair">
-        <button class="soft" id="noLivesDaily"><i data-icon="calendar"></i>Daily</button>
-        <button class="soft" id="noLivesRush"><i data-icon="bolt"></i>Rush</button>
-      </div>
+  <!-- ============ Shop (mock purchases for the playtest) ============ -->
+  <section id="shop" class="screen" hidden>
+    <header class="bar">
+      <button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button>
+      <div class="bar-title"><b>Shop</b><span>Test mode: nothing is really charged</span></div>
+      <span class="pill coins" id="shopCoins"></span>
+    </header>
+    <h3 class="section-title">Free coins</h3>
+    <div class="shop-free">
+      <button class="shop-card" id="adCoinsBtn"><span class="mode-icon" style="--tint: var(--accent)"><i data-icon="tv"></i></span><span class="mode-text"><b>Watch an ad</b><small id="adCoinsSub">+50 coins</small></span></button>
+      <button class="shop-card" id="dailyBonusBtn"><span class="mode-icon" style="--tint: var(--survive)"><i data-icon="gift"></i></span><span class="mode-text"><b>Daily bonus</b><small id="dailyBonusSub">+100 coins</small></span></button>
     </div>
+    <h3 class="section-title">Coin packs</h3>
+    <div class="packs" id="packs"></div>
+    <h3 class="section-title">What coins buy</h3>
+    <ul class="coin-uses">
+      <li><i data-icon="sparkle"></i><span><b>Abilities</b> during a puzzle: Peek, Counter, Paintball, Rocket, Birth scan, Shield</span></li>
+      <li><i data-icon="heart"></i><span><b>Continues</b> when you run out of hearts (after the first free ad)</span></li>
+      <li><i data-icon="palette"></i><span><b>Themes</b> for the board and app</span></li>
+    </ul>
   </section>
 
   <!-- ============ Playground ============ -->
@@ -170,7 +167,7 @@
 
   <!-- ============ Themes ============ -->
   <section id="themes" class="screen" hidden>
-    <header class="bar"><button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button><div class="bar-title"><b>Themes</b></div><span class="pill coins" id="themeCoins"></span></header>
+    <header class="bar"><button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button><div class="bar-title"><b>Themes</b></div><button class="pill coins" data-shop id="themeCoins"></button></header>
     <p class="hint">Earn coins with every star, then unlock new colours.</p>
     <div id="themeList" class="theme-list"></div>
   </section>
@@ -197,12 +194,14 @@
         <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="die">✕</i></span><span>Tap it twice: it <b>dies</b></span></li>
         <li><span class="tap-demo"><i></i><i data-icon="chevron" class="tiny"></i><i class="born">+</i></span><span>Tap an empty cell: it's <b>born</b></span></li>
       </ul>
+      <h3 class="modes-title">Abilities</h3>
+      <ul class="modes" id="abilityHelp"></ul>
       <h3 class="modes-title">Modes</h3>
       <ul class="modes">
-        <li><span class="mode-dot"><i data-icon="play"></i></span><span><b>Play</b> Pick a difficulty from Very easy to Extreme: harder means a bigger board with more blocks. Too many mistakes cost a heart. After each puzzle, watch the board zoom out and play on.</span></li>
-        <li><span class="mode-dot" style="--tint: var(--survive)"><i data-icon="infinity"></i></span><span><b>Endless</b> Your answer becomes the next puzzle, so you follow one pattern step after step. You have 3 lives per run. Here the board's edge is a wall: nothing exists outside it.</span></li>
+        <li><span class="mode-dot"><i data-icon="play"></i></span><span><b>Play</b> Pick a difficulty from Very easy to Extreme: harder means a bigger board with more blocks. Each puzzle gives you 3 hearts; every Check with mistakes costs one, and the wrong cells get flagged so you can fix them. Your stars are the hearts you have left.</span></li>
+        <li><span class="mode-dot" style="--tint: var(--survive)"><i data-icon="infinity"></i></span><span><b>Endless</b> Your answer becomes the next puzzle, so you follow one pattern step after step. You have 3 hearts for the whole run. Here the board's edge is a wall: nothing exists outside it.</span></li>
         <li><span class="mode-dot" style="--tint: var(--born)"><i data-icon="calendar"></i></span><span><b>Daily</b> Everyone gets the same puzzle today. Share your result and keep your streak.</span></li>
-        <li><span class="mode-dot" style="--tint: var(--die)"><i data-icon="bolt"></i></span><span><b>Rush</b> Solve as many as you can in 60 seconds. Only perfect answers count.</span></li>
+        <li><span class="mode-dot" style="--tint: var(--die)"><i data-icon="bolt"></i></span><span><b>Rush</b> Solve as many as you can in 60 seconds. Only perfect answers count, and abilities are off.</span></li>
         <li><span class="mode-dot" style="--tint: var(--accent2)"><i data-icon="flask"></i></span><span><b>Playground</b> Free play, no scores. Draw any pattern on an endless board and press Start to watch the rules play out.
           Use Next and Undo to go one step at a time, and turn on Colour hints to see what survives, dies and is born next.
           A good place to practise, test a guess, or just watch famous patterns like the glider walk across the board.</span></li>
@@ -220,6 +219,69 @@
       <p class="lesson-body" id="lessonBody"></p>
       <div class="lesson-how" id="lessonHow"></div>
       <button class="primary wide big-btn" id="lessonGo">Let's try</button>
+    </div>
+  </div>
+
+  <!-- ============ Out of hearts: continue ============ -->
+  <div id="continueModal" class="modal" hidden>
+    <div class="modal-card center-card">
+      <div class="empty-icon"><i data-icon="heart"></i></div>
+      <h2>Out of hearts</h2>
+      <p class="muted" id="continueText">Continue with 3 fresh hearts?</p>
+      <button class="primary wide big-btn" id="continueBtn"></button>
+      <button class="soft wide" id="giveUpBtn">Give up and see the answer</button>
+    </div>
+  </div>
+
+  <!-- ============ Fake ad (playtest) ============ -->
+  <div id="adModal" class="ad-modal" hidden>
+    <div class="ad-top"><span class="ad-tag">Ad · TEST</span><span id="adTimer">5</span></div>
+    <div class="ad-body">
+      <div class="ad-art"><i data-icon="sparkle"></i></div>
+      <h2 id="adTitle">Totally Real Game 3</h2>
+      <p id="adText">This is a placeholder for a rewarded video ad. In the real app a 15–30 second ad plays here.</p>
+      <span class="ad-fake-btn">Install</span>
+    </div>
+    <button class="primary wide big-btn" id="adClose" disabled>Close ad and get reward</button>
+  </div>
+
+  <!-- ============ Fake Google Play purchase sheet (playtest) ============ -->
+  <div id="buyModal" class="modal sheet" hidden>
+    <div class="buy-sheet">
+      <div class="buy-head"><span class="buy-logo"><i data-icon="play"></i></span><b>Google Play</b><span class="ad-tag">TEST</span></div>
+      <div class="buy-item"><span><b id="buyName"></b><small>Color Life</small></span><b id="buyPrice"></b></div>
+      <p class="muted small-print">Test purchase: no money is charged. In the real app this is Google Play's own payment sheet.</p>
+      <button class="primary wide big-btn" id="buyGo">Buy</button>
+      <button class="soft wide" id="buyCancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ============ End of puzzle ============ -->
+  <div id="endModal" class="modal" hidden>
+    <div class="modal-card end-card">
+      <div class="stars" id="endStars"><i data-icon="star"></i><i data-icon="star"></i><i data-icon="star"></i></div>
+      <h2 id="endTitle"></h2>
+      <p class="muted" id="endText"></p>
+
+      <div id="endPreview" class="end-window">
+        <canvas id="endSim"></canvas>
+        <small id="endSimCaption"></small>
+      </div>
+
+      <div id="endReview" class="end-window review" hidden>
+        <div class="review-nav">
+          <button class="icon-btn" id="revPrev" aria-label="Previous"><i data-icon="back"></i></button>
+          <b id="revTitle"></b>
+          <button class="icon-btn" id="revNext" aria-label="Next"><i data-icon="chevron"></i></button>
+        </div>
+        <div id="revBoard" class="board review-board"></div>
+        <p class="review-why" id="revWhy"></p>
+        <ul class="review-list" id="revList"></ul>
+      </div>
+
+      <div class="end-coins" id="endCoins"></div>
+      <button class="soft wide" id="endMistakes"><i data-icon="flag"></i><span id="endMistakesLabel">Check mistakes</span></button>
+      <div class="pair" id="endButtons"></div>
     </div>
   </div>
 

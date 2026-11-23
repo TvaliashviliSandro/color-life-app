@@ -312,29 +312,7 @@ button.link.center { display: flex; margin: 16px auto 0; font-size: 14px; }
 .sw.die { background: var(--die); }
 .sw.born { background: var(--born); }
 
-/* ---------- Result sheet ---------- */
-.result {
-  margin: 10px -4px 0;
-  padding: 14px 16px 4px;
-  background: var(--panel);
-  border-radius: 20px;
-  text-align: center;
-  animation: up .28s ease-out;
-}
-@keyframes up { from { transform: translateY(24px); opacity: 0; } }
-.result h2 { margin: 4px 0 2px; font-size: 19px; font-weight: 600; }
-.result p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
-.result .pair { margin-bottom: 10px; }
-.stars { display: flex; justify-content: center; gap: 8px; }
-.stars .ic { width: 32px; height: 32px; color: var(--line); fill: var(--line); stroke-width: 1.4; }
-.stars .ic.on { color: var(--born); fill: var(--born); animation: star .45s cubic-bezier(.3, 1.6, .5, 1) both; }
-.stars .ic.on:nth-child(2) { animation-delay: .12s; }
-.stars .ic.on:nth-child(3) { animation-delay: .24s; }
-@keyframes star { from { transform: scale(0) rotate(-40deg); } }
-
-/* ---------- Out of hearts ---------- */
-.empty-state { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; text-align: center; }
-.empty-state p { margin: 0; }
+/* ---------- Shared popup bits ---------- */
 .empty-icon {
   width: 84px; height: 84px; margin: 0 auto; border-radius: 50%;
   display: grid; place-items: center;
@@ -342,27 +320,6 @@ button.link.center { display: flex; margin: 16px auto 0; font-size: 14px; }
   background: color-mix(in srgb, var(--die) 14%, transparent);
 }
 .empty-icon .ic { width: 40px; height: 40px; }
-.center-mode { text-align: left; }
-
-/* ---------- Visualization after a puzzle ---------- */
-.sim {
-  width: min(100%, 440px, 52vh);
-  aspect-ratio: 1;
-  border-radius: 18px;
-  background: var(--panel);
-  animation: sim-in .3s ease-out;
-}
-@keyframes sim-in { from { opacity: .4; } }
-.sim-bar {
-  width: min(100%, 440px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- Difficulty picker ---------- */
 .diff-list { display: grid; gap: 8px; margin-top: 4px; }
@@ -618,4 +575,168 @@ button.link.center { display: flex; margin: 16px auto 0; font-size: 14px; }
 }
 @media (max-width: 380px) {
   .pg-buttons button span { font-size: 11px; }
+}
+
+/* ---------- Playtest + small buttons ---------- */
+.playtest-tag {
+  align-self: center;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--born); background: color-mix(in srgb, var(--born) 14%, transparent);
+  padding: 4px 10px; border-radius: 999px;
+}
+button.pill { color: var(--text); }
+button.small { padding: 7px 12px; font-size: 13px; }
+.trio > * { padding-left: 6px; padding-right: 6px; }
+.shield-on { color: var(--accent); display: inline-flex; margin-left: 2px; }
+.cost { white-space: nowrap; color: var(--born); }
+
+/* ---------- Stars (end popup) ---------- */
+.stars { display: flex; justify-content: center; gap: 8px; }
+.stars .ic { width: 34px; height: 34px; color: var(--line); fill: var(--line); stroke-width: 1.4; }
+.stars .ic.on { color: var(--born); fill: var(--born); animation: star .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+.stars .ic.on:nth-child(2) { animation-delay: .12s; }
+.stars .ic.on:nth-child(3) { animation-delay: .24s; }
+@keyframes star { from { transform: scale(0) rotate(-40deg); } }
+@keyframes up { from { transform: translateY(24px); opacity: 0; } }
+
+/* ---------- Cell states for abilities and review ---------- */
+.cell.locked::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.lock-dot {
+  position: absolute; left: 3px; bottom: 3px; width: 32%; height: 32%; min-width: 10px; min-height: 10px;
+  color: var(--accent); display: grid; place-items: center;
+}
+.lock-dot .ic { width: 100%; height: 100%; stroke-width: 2.6; }
+.cell.scan { outline: 2px dashed var(--born); outline-offset: 1px; }
+.cell.scan:not([class*="m-"]) { background: color-mix(in srgb, var(--born) 14%, var(--empty)); }
+.cell.missed { box-shadow: inset 0 0 0 2px var(--born); }
+.count {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  font-size: calc(min(440px, 48vh, 100vw) / var(--n) * .38);
+  color: var(--accent); text-shadow: 0 0 6px var(--panel);
+}
+.cell.live .count, .cell[class*="m-"] .count { color: var(--on-accent); text-shadow: none; }
+.cell.picked { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cell.is-wrong { outline: 2.5px solid var(--die); outline-offset: 1px; z-index: 1; }
+.cell.missed { outline: 2.5px dashed var(--born); outline-offset: 1px; }
+.review-board .cell[class*="m-"]:not(.is-wrong) { opacity: .38; }
+.review-board .badge { min-width: 12px; min-height: 12px; }
+.board { width: min(100%, 440px, 46vh); }
+
+/* ---------- Ability bar ---------- */
+.abilities { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding-top: 10px; }
+.ability {
+  flex-direction: column; gap: 2px; padding: 7px 2px 6px; border-radius: 12px;
+  background: var(--panel); font-size: 11px; color: var(--text);
+}
+.ability > .ic { width: 20px; height: 20px; color: var(--accent); }
+.ab-name { font-weight: 600; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ab-cost { color: var(--muted); font-size: 10.5px; }
+.ab-cost .coins-val { gap: 2px; }
+.ability.active { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.target-banner {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  padding: 8px 8px 8px 14px; border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel)); color: var(--text); font-size: 14px;
+}
+.target-banner > span { flex: 1; display: flex; align-items: center; gap: 8px; }
+.target-banner .ic { color: var(--accent); }
+
+/* ---------- Continue popup ---------- */
+.center-card { text-align: center; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.center-card h2 { margin: 6px 0 0; }
+.center-card p { margin: 0 0 6px; }
+
+/* ---------- Fake ad (playtest) ---------- */
+.ad-modal {
+  position: fixed; inset: 0; z-index: 30; background: #0b0c0f; color: #f2f2f2;
+  display: flex; flex-direction: column;
+  padding: calc(14px + var(--sat)) calc(16px + var(--sar)) calc(18px + var(--sab)) calc(16px + var(--sal));
+}
+.ad-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #aaa; }
+.ad-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: #1b1b1b; background: #f2c14e; padding: 3px 8px; border-radius: 6px;
+}
+.ad-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+.ad-art {
+  width: 150px; height: 150px; border-radius: 36px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #ff9a8b, #f6c26b 50%, #8fd3c7); color: #fff;
+}
+.ad-art .ic { width: 70px; height: 70px; }
+.ad-body h2 { margin: 8px 0 0; font-size: 24px; }
+.ad-body p { margin: 0; color: #aaa; max-width: 320px; }
+.ad-fake-btn { margin-top: 8px; padding: 10px 28px; border-radius: 999px; background: #2b6ef2; color: #fff; font-weight: 600; }
+.ad-modal button.primary { background: #f2f2f2; color: #111; }
+
+/* ---------- Fake Google Play sheet (playtest) ---------- */
+.modal.sheet { align-items: flex-end; padding-bottom: 0; }
+.buy-sheet {
+  width: 100%; max-width: 520px; background: #fff; color: #202124;
+  border-radius: 22px 22px 0 0; padding: 18px 20px calc(20px + var(--sab));
+  display: flex; flex-direction: column; gap: 12px; animation: up .25s ease-out;
+}
+.buy-head { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.buy-head .ad-tag { margin-left: auto; }
+.buy-logo { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #34a853, #4285f4 60%, #fbbc04); }
+.buy-logo .ic { width: 16px; height: 16px; fill: currentColor; }
+.buy-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid #e3e3e3; border-bottom: 1px solid #e3e3e3; }
+.buy-item span { display: flex; flex-direction: column; }
+.buy-item small { color: #5f6368; }
+.small-print { font-size: 12px; margin: 0; color: #5f6368 !important; }
+.buy-sheet button.primary { background: #01875f; color: #fff; border-radius: 999px; }
+.buy-sheet button.soft { background: transparent; color: #01875f; }
+
+/* ---------- End-of-puzzle popup ---------- */
+.end-card { max-width: 440px; text-align: center; display: flex; flex-direction: column; gap: 10px; padding-top: 18px; }
+.end-card h2 { margin: 2px 0 0; font-size: 21px; }
+.end-card > p { margin: 0; }
+.end-window { background: var(--raised); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.end-window canvas { width: 100%; aspect-ratio: 1; max-height: 34vh; border-radius: 12px; display: block; margin: 0 auto; }
+.end-window small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.review-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.review-nav b { font-size: 13px; }
+.review-nav .icon-btn { width: 34px; height: 34px; }
+.review-board { width: min(100%, 34vh); margin: 0 auto; --gap: 3px; border-radius: 12px; }
+.review-why { margin: 2px 0 0; font-size: 13px; color: var(--text); min-height: 2.6em; }
+.review-list { list-style: none; margin: 0; padding: 0; text-align: left; font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
+.review-list li { padding: 8px 10px; background: var(--panel); border-radius: 10px; }
+.review-list b { color: var(--text); }
+.end-coins { display: grid; gap: 4px; font-size: 13px; color: var(--muted); background: var(--raised); border-radius: 14px; padding: 10px 14px; }
+.end-coins div { display: flex; justify-content: space-between; }
+.end-coins .total { color: var(--text); font-weight: 600; border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+.end-coins .balance { font-size: 12px; }
+
+/* ---------- Shop ---------- */
+.section-title { margin: 14px 2px 8px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.shop-free { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.shop-card { justify-content: flex-start; gap: 10px; padding: 12px; text-align: left; background: var(--panel); }
+.shop-card .mode-icon { width: 38px; height: 38px; }
+.shop-card .mode-text small { white-space: normal; }
+.packs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 8px; padding-top: 6px; }
+.pack {
+  position: relative; flex-direction: column; gap: 2px; padding: 18px 10px 12px; background: var(--panel);
+}
+.pack b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.pack small { color: var(--muted); margin-top: -2px; }
+.pack-coins { display: flex; justify-content: center; margin-bottom: 4px; }
+.pack-coins .ic { width: 22px; height: 22px; margin-left: -6px; }
+.pack-coins .ic:first-child { margin-left: 0; }
+.pack-price { margin-top: 8px; padding: 6px 14px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 14px; }
+.pack-tag {
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--on-accent); background: var(--survive); padding: 3px 9px; border-radius: 999px;
+}
+.coin-uses { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--muted); font-size: 13px; }
+.coin-uses li { display: flex; gap: 10px; align-items: flex-start; }
+.coin-uses .ic { color: var(--accent); margin-top: 1px; }
+.coin-uses b { color: var(--text); }
+
+@media (max-height: 700px) {
+  .board { width: min(100%, 440px, 42vh); }
+  .ability { padding: 5px 2px; }
+  .ab-cost { display: none; }
 }
