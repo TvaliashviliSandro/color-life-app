@@ -85,6 +85,7 @@
     <p id="hint" class="hint"></p>
 
     <div class="stage">
+      <div class="hearts-row" id="heartsRow" hidden></div>
       <div id="board" class="board"></div>
     </div>
 
@@ -227,7 +228,7 @@
     <div class="modal-card center-card">
       <div class="empty-icon"><i data-icon="heart"></i></div>
       <h2>Out of hearts</h2>
-      <p class="muted" id="continueText">Continue with 3 fresh hearts?</p>
+      <p class="muted" id="continueText">Continue with 1 more heart?</p>
       <button class="primary wide big-btn" id="continueBtn"></button>
       <button class="soft wide" id="giveUpBtn">Give up and see the answer</button>
     </div>
@@ -265,7 +266,10 @@
 
       <div id="endPreview" class="end-window">
         <canvas id="endSim"></canvas>
-        <small id="endSimCaption"></small>
+        <div class="end-sim-bar">
+          <small id="endSimCaption"></small>
+          <button class="link" id="endReplay"><i data-icon="replay"></i>Watch again</button>
+        </div>
       </div>
 
       <div id="endReview" class="end-window review" hidden>
@@ -276,7 +280,6 @@
         </div>
         <div id="revBoard" class="board review-board"></div>
         <p class="review-why" id="revWhy"></p>
-        <ul class="review-list" id="revList"></ul>
       </div>
 
       <div class="end-coins" id="endCoins"></div>

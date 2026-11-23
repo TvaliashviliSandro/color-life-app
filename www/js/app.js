@@ -370,7 +370,11 @@ function hintFor() {
 
 function updateBar() {
   const p = G.puzzle;
-  const hearts = () => heartsRow(G.hearts) + (G.shield ? `<span class="shield-on">${icon("shield")}</span>` : "");
+  // Hearts sit right above the board; the top bar keeps the title and a short status.
+  const showHearts = ["play", "daily", "endless"].includes(G.mode);
+  $("heartsRow").hidden = !showHearts;
+  if (showHearts) $("heartsRow").innerHTML = heartsRow(G.hearts)
+    + (G.shield ? `<span class="shield-on">${icon("shield")}Shield</span>` : "");
   if (G.mode === "tutorial") {
     $("gameTitle").textContent = "Tutorial";
     $("gameSub").textContent = `Lesson ${G.step + 1} of ${TUTORIAL.length} · ${TUTORIAL[G.step].title}`;
@@ -379,15 +383,15 @@ function updateBar() {
     const d = difficulty(G.diff);
     $("gameTitle").textContent = d.name;
     $("gameSub").textContent = `${p.size}×${p.size} board · ${p.frames[0].length} blocks`;
-    $("gameStatus").innerHTML = hearts();
+    $("gameStatus").innerHTML = "";
   } else if (G.mode === "endless") {
     $("gameTitle").textContent = "Endless";
     $("gameSub").textContent = `Step ${G.endless.steps + 1}` + (S.endlessBest ? ` · best ${S.endlessBest}` : "");
-    $("gameStatus").innerHTML = hearts();
+    $("gameStatus").innerHTML = "";
   } else if (G.mode === "daily") {
     $("gameTitle").textContent = `Daily #${store.dailyNumber(G.date)}`;
     $("gameSub").textContent = new Date(G.date + "T12:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-    $("gameStatus").innerHTML = hearts();
+    $("gameStatus").innerHTML = `${icon("flame")}${store.currentDailyStreak(S, G.date)}`;
   } else {
     $("gameTitle").textContent = "Rush";
     $("gameSub").textContent = `Solved ${G.rush.score} · no abilities`;
@@ -475,14 +479,14 @@ function showContinue() {
   const free = G.continues === 0;
   const cost = continueCost();
   $("continueText").textContent = free
-    ? "Watch a short ad to continue with 3 fresh hearts."
-    : "Continue with 3 fresh hearts. Each continue on this puzzle costs more.";
+    ? "Watch a short ad to get 1 more heart."
+    : "Get 1 more heart. Each continue on this puzzle costs more.";
   const btn = $("continueBtn");
-  btn.innerHTML = free ? `${icon("tv")}Watch ad · +3 hearts` : S.coins >= cost ? `Continue for ${coinsHTML(cost)}` : `${icon("bag")}Get coins (need ${coinsHTML(cost)})`;
+  btn.innerHTML = free ? `${icon("tv")}Watch ad · +1 heart` : S.coins >= cost ? `+1 heart for ${coinsHTML(cost)}` : `${icon("bag")}Get coins (need ${coinsHTML(cost)})`;
   btn.onclick = () => {
     if (free) {
       $("continueModal").hidden = true;
-      showAd(() => restoreHearts(), "3 hearts");
+      showAd(() => restoreHearts(), "1 heart");
     } else if (spend(cost)) {
       $("continueModal").hidden = true;
       restoreHearts();
@@ -494,12 +498,12 @@ function showContinue() {
   $("continueModal").hidden = false;
 }
 function restoreHearts() {
-  G.hearts = HEARTS;
+  G.hearts = 1;
   G.continues++;
   G.phase = "solve";
   updateBar();
   renderAbilities();
-  toast(`${heartsRow(3)} Hearts restored`);
+  toast(`${icon("heart", "fill heart-on")} +1 heart`);
 }
 $("giveUpBtn").onclick = () => {
   $("continueModal").hidden = true;
@@ -671,10 +675,9 @@ function showAttempt(i) {
   $("revPrev").disabled = i === 0;
   $("revNext").disabled = i === list.length - 1;
   renderBoard($("revBoard"), a.size, start, { marks, results });
-  $("revWhy").innerHTML = "Tap any cell to see why it does what it does.";
-  const items = [...a.wrong, ...a.missed];
-  $("revList").innerHTML = items.slice(0, 6).map((k) => `<li>${explain(k, start, marks.get(k))}</li>`).join("")
-    + (items.length > 6 ? `<li class="more">+ ${items.length - 6} more: tap the flagged cells</li>` : "");
+  const nWrong = a.wrong.length, nMissed = a.missed.length;
+  $("revWhy").innerHTML = `<span class="prompt">${icon("search")}Tap the outlined cells to see what went wrong`
+    + `<small>${[nWrong ? plural(nWrong, "wrong cell") : "", nMissed ? plural(nMissed, "missed birth") : ""].filter(Boolean).join(" · ")}</small></span>`;
   $("revBoard").onclick = (e) => {
     const c = e.target.closest(".cell");
     if (!c) return;
@@ -683,6 +686,7 @@ function showAttempt(i) {
     $("revWhy").innerHTML = explain(c.dataset.k, start, marks.get(c.dataset.k));
   };
 }
+$("endReplay").onclick = () => endSim.replay();
 $("revPrev").onclick = () => showAttempt(Math.max(0, G.reviewIndex - 1));
 $("revNext").onclick = () => showAttempt(Math.min(G.attempts.length - 1, G.reviewIndex + 1));
 

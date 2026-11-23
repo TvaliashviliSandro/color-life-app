@@ -740,3 +740,33 @@ button.small { padding: 7px 12px; font-size: 13px; }
   .ability { padding: 5px 2px; }
   .ab-cost { display: none; }
 }
+
+/* ---------- Hearts above the board ---------- */
+.hearts-row {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 26px;
+}
+.hearts-row .ic { width: 24px; height: 24px; }
+.hearts-row .heart-on { color: var(--die); fill: var(--die); stroke: var(--die); }
+.hearts-row .heart-off { color: var(--faint); }
+.hearts-row .shield-on {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 3px 10px 3px 7px;
+  border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.hearts-row .shield-on .ic { width: 16px; height: 16px; }
+
+/* ---------- End popup: replay button + tap-to-explain review ---------- */
+.end-sim-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.end-sim-bar small { text-align: left; }
+.review-why { min-height: 3.2em; display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 10px 12px; border-radius: 12px; background: var(--panel); line-height: 1.45; }
+.review-why .prompt { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); }
+.review-why .prompt .ic { color: var(--accent); margin-bottom: 2px; }
+.review-why .prompt small { font-size: 12px; color: var(--faint); }
+.review-board .cell.is-wrong, .review-board .cell.missed { cursor: pointer; animation: pulse 1.6s ease-in-out 2; }
+@keyframes pulse { 50% { transform: scale(.9); } }
+.review-why { display: block; }
+.review-why .prompt { display: flex; }
+.pill:empty { display: none; }
+.end-coins .total:first-child { border-top: 0; padding-top: 0; margin-top: 0; }

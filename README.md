@@ -21,7 +21,7 @@ next step, then watch it happen. Each puzzle takes 10–30 seconds.
 Ads and purchases are **mocked** so the full experience can be tried before the Play Store:
 
 - Every puzzle has **3 hearts**; each wrong Check costs one and flags the wrong cells (missed births only as a count).
-- Out of hearts → **Continue**: first a fake rewarded ad, then 50, 100, 200… coins. Or give up and see the answer.
+- Out of hearts → **Continue** for +1 heart: first a fake rewarded ad, then 50, 100, 200… coins. Or give up and see the answer.
 - **Abilities** cost coins (Peek, Counter, Paintball, Rocket, Birth scan, Shield). Allowed in Play, Daily and Endless, not Rush.
   A shared Daily result says which abilities were used.
 - **End-of-puzzle popup**: a replay of where the pattern goes, coins earned, and "Check mistakes" with a plain-language
