@@ -8,12 +8,12 @@ import { key, parse, fromList, step, inBoard, sameCells, outcome, neighbours, sh
 // live: how many white blocks (density) · changes: cells that die or are born
 // slack: mistakes allowed per star (2★ ≤ slack, 1★ ≤ 2×slack)
 export const DIFFICULTIES = [
-  { id: "very-easy", name: "Very easy", emoji: "🌱", size: 5, area: 3, live: [3, 4], changes: [1, 3], slack: 1 },
-  { id: "easy", name: "Easy", emoji: "🙂", size: 6, area: 4, live: [4, 6], changes: [2, 5], slack: 1 },
-  { id: "medium", name: "Medium", emoji: "🧠", size: 7, area: 5, live: [6, 9], changes: [4, 8], slack: 1 },
-  { id: "hard", name: "Hard", emoji: "🔥", size: 8, area: 6, live: [9, 13], changes: [7, 12], slack: 2 },
-  { id: "very-hard", name: "Very hard", emoji: "💀", size: 9, area: 7, live: [13, 18], changes: [10, 16], slack: 3 },
-  { id: "extreme", name: "Extreme", emoji: "☄️", size: 10, area: 8, live: [18, 26], changes: [14, 24], slack: 3 },
+  { id: "very-easy", name: "Very easy", size: 5, area: 3, live: [3, 4], changes: [1, 3], slack: 1 },
+  { id: "easy", name: "Easy", size: 6, area: 4, live: [4, 6], changes: [2, 5], slack: 1 },
+  { id: "medium", name: "Medium", size: 7, area: 5, live: [6, 9], changes: [4, 8], slack: 1 },
+  { id: "hard", name: "Hard", size: 8, area: 6, live: [9, 13], changes: [7, 12], slack: 2 },
+  { id: "very-hard", name: "Very hard", size: 9, area: 7, live: [13, 18], changes: [10, 16], slack: 3 },
+  { id: "extreme", name: "Extreme", size: 10, area: 8, live: [18, 26], changes: [14, 24], slack: 3 },
 ];
 export const difficulty = (id) => DIFFICULTIES.find((d) => d.id === id) || DIFFICULTIES[0];
 

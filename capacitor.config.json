@@ -2,9 +2,9 @@
   "appId": "io.github.tvaliashvilisandro.colorlife",
   "appName": "Color Life",
   "webDir": "www",
-  "backgroundColor": "#0f1115",
+  "backgroundColor": "#131519",
   "android": {
-    "backgroundColor": "#0f1115"
+    "backgroundColor": "#131519"
   },
   "plugins": {
     "SystemBars": {

@@ -8,11 +8,14 @@ import * as store from "./store.js";
 import { THEMES, applyTheme } from "./themes.js";
 import { openPlayground, closePlayground } from "./playground.js";
 import { createSim } from "./sim.js";
+import { icon, hydrateIcons } from "./icons.js";
 
 const $ = (id) => document.getElementById(id);
 const SITE = "https://tvaliashvilisandro.github.io/color-life-app/";
 const RUSH_MS = 60_000;
 const FREE_HEARTS_PER_DAY = 3;
+
+hydrateIcons();
 
 const S = store.load();
 store.tickLives(S);
@@ -26,7 +29,9 @@ let rushTimer = null;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch (_) {} };
 const mmss = (ms) => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
-const starText = (n) => "★".repeat(n) + "☆".repeat(3 - n);
+const starText = (n) => `${n}/3 stars`;
+const coinsHTML = (n) => `<span class="coins-val">${icon("coin", "coin")}${n}</span>`;
+const heartsRow = (n, max) => icon("heart", "fill heart-on").repeat(n) + icon("heart", "heart-off").repeat(max - n);
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 let toastTimer;
@@ -72,7 +77,7 @@ document.querySelectorAll("[data-back]").forEach((b) => (b.onclick = () => histo
 function livesHTML() {
   store.tickLives(S);
   const next = store.nextLifeIn(S);
-  return `❤️ ${S.lives}` + (next ? ` <small>${mmss(next)}</small>` : "");
+  return `${icon("heart", "fill heart-on")}${S.lives}` + (next ? ` <small>${mmss(next)}</small>` : "");
 }
 
 function refresh() {
@@ -86,7 +91,7 @@ function refresh() {
 
 function refreshHome() {
   $("homeLives").innerHTML = livesHTML();
-  $("homeCoins").textContent = `🪙 ${S.coins}`;
+  $("homeCoins").innerHTML = coinsHTML(S.coins);
   $("playSub").textContent = S.tutorialDone
     ? `Choose a difficulty · last: ${difficulty(S.lastDifficulty).name}`
     : "Starts with a quick 5-step tutorial";
@@ -125,7 +130,7 @@ function renderBoard(el, size, live, { marks, outcome, results, flip } = {}) {
       const o = outcome?.get(k); if (o) cls += " o-" + o;
       if (flip?.has(k)) cls += " flip";
       const r = results?.get(k);
-      const badge = r ? `<span class="badge ${r}">${r === "ok" ? "✓" : r === "wrong" ? "✕" : "!"}</span>` : "";
+      const badge = r ? `<span class="badge ${r}">${icon(r === "ok" ? "check" : r === "wrong" ? "close" : "plus")}</span>` : "";
       html += `<div class="${cls}" data-k="${k}" style="--d:${(x + y) * 35}ms">${badge}</div>`;
     }
   el.innerHTML = html;
@@ -134,9 +139,9 @@ function renderBoard(el, size, live, { marks, outcome, results, flip } = {}) {
 // ---------- Tutorial lessons (popup before each of the 5 tutorial puzzles) ----------
 // Example grids are 3×3, middle cell = index 4. "on" = live, "" = empty.
 const TAP = {
-  survive: '<span class="tap-demo"><i class="on"></i>→<i class="survive">●</i></span><span>Tap a white cell <b>once</b> = 🟢 survives</span>',
-  die: '<span class="tap-demo"><i class="on"></i>→<i class="die">✕</i></span><span>Tap a white cell <b>twice</b> = 🔴 dies</span>',
-  born: '<span class="tap-demo"><i></i>→<i class="born">+</i></span><span>Tap an <b>empty</b> cell = 🟡 born</span>',
+  survive: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="survive">●</span></span><span>Tap a white cell <b>once</b>: it survives</span>`,
+  die: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="die">✕</span></span><span>Tap a white cell <b>twice</b>: it dies</span>`,
+  born: `<span class="tap-demo"><span></span>${icon("chevron", "tiny")}<span class="born">+</span></span><span>Tap an <b>empty</b> cell: it's born</span>`,
 };
 const LESSONS = [
   { title: "Survive",
@@ -172,14 +177,14 @@ function lessonExample(L) {
   }
   const grid = (cells) => `<div class="mini big">${cells.map((c) => `<i class="${c}">${GLYPH[c] || ""}</i>`).join("")}</div>`;
   const after = L.before.map((c, i) => (i === 4 ? L.result : c ? "ghost" : ""));
-  return `<div class="lesson-grids"><div>${grid(L.before)}<small>now</small></div><span class="arrow">→</span><div>${grid(after)}<small>next step</small></div></div>`;
+  return `<div class="lesson-grids"><div>${grid(L.before)}<small>now</small></div><span class="arrow">${icon("next")}</span><div>${grid(after)}<small>next step</small></div></div>`;
 }
 
 function showLesson(level) {
   const L = LESSONS[level - 1];
   showPopup({
     step: `Lesson ${level} of ${LESSONS.length}`, title: L.title, example: lessonExample(L),
-    body: L.body, how: L.how.map((t) => `<p>${TAP[t]}</p>`).join(""), button: "Let's try ▶",
+    body: L.body, how: L.how.map((t) => `<p>${TAP[t]}</p>`).join(""), button: "Let's try",
   });
 }
 
@@ -222,7 +227,7 @@ function hintFor() {
   if (G.mode === "endless")
     return "Your answer becomes the next board. The edge is a wall: nothing exists outside it.";
   if (G.mode === "daily" || (G.mode === "play" && (S.diffStats[G.diff]?.solved || 0) < 3))
-    return "Mark every white cell 🟢 or 🔴, and the empty cells that will be born 🟡.";
+    return 'Mark every white cell <i class="sw survive"></i> or <i class="sw die"></i>, and the empty cells that will be born <i class="sw born"></i>.';
   return "";
 }
 
@@ -231,26 +236,26 @@ function updateBar() {
   if (G.mode === "tutorial") {
     $("gameTitle").textContent = "Tutorial";
     $("gameSub").textContent = `Lesson ${G.step + 1} of ${TUTORIAL.length} · ${TUTORIAL[G.step].title}`;
-    $("gameStatus").textContent = "📘";
+    $("gameStatus").innerHTML = icon("book");
   } else if (G.mode === "play") {
     const d = difficulty(G.diff);
-    $("gameTitle").textContent = `${d.emoji} ${d.name}`;
+    $("gameTitle").textContent = d.name;
     $("gameSub").textContent = `${p.size}×${p.size} board · ${p.frames[0].length} blocks`;
     $("gameStatus").innerHTML = livesHTML();
   } else if (G.mode === "endless") {
     const e = G.endless;
-    $("gameTitle").textContent = "♾️ Endless";
+    $("gameTitle").textContent = "Endless";
     $("gameSub").textContent = `Step ${e.steps + 1}` + (S.endlessBest ? ` · best ${S.endlessBest}` : "");
-    $("gameStatus").textContent = "❤️".repeat(e.lives) + "🖤".repeat(3 - e.lives);
+    $("gameStatus").innerHTML = heartsRow(e.lives, 3);
   } else if (G.mode === "daily") {
     $("gameTitle").textContent = `Daily #${store.dailyNumber(G.date)}`;
     $("gameSub").textContent = new Date(G.date + "T12:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-    $("gameStatus").textContent = `🔥 ${store.currentDailyStreak(S, G.date)}`;
+    $("gameStatus").innerHTML = `${icon("flame")}${store.currentDailyStreak(S, G.date)}`;
   } else {
     $("gameTitle").textContent = "Rush";
     $("gameSub").textContent = `Solved ${G.rush.score}`;
     const now = G.rush.pausedAt || Date.now();
-    $("gameStatus").textContent = `⏱ ${Math.ceil(Math.max(0, G.rush.endAt - now) / 1000)}`;
+    $("gameStatus").innerHTML = `${icon("timer")}${Math.ceil(Math.max(0, G.rush.endAt - now) / 1000)}`;
   }
 }
 
@@ -320,7 +325,7 @@ function mistakesText(res) {
   return res.mistakes ? plural(res.mistakes, "mistake") : "No mistakes";
 }
 function titleFor(stars) {
-  if (stars === 3) return S.perfectStreak >= 3 ? `Perfect! ✨ ${S.perfectStreak} in a row` : "Perfect!";
+  if (stars === 3) return S.perfectStreak >= 3 ? `Perfect · ${S.perfectStreak} in a row` : "Perfect!";
   return ["Not quite", "Good", "Great!"][stars];
 }
 
@@ -336,13 +341,13 @@ function finish(res) {
     if (stars > 0 && last) {
       S.tutorialDone = true;
       store.save(S);
-      showResult(stars, "Tutorial complete! 🎉", "You know all the rules. Now pick a difficulty.",
-        [["Home", () => history.back()], ["Choose difficulty ▶", () => go("difficulty"), true]]);
+      showResult(stars, "Tutorial complete", "You know all the rules. Now pick a difficulty.",
+        [["Home", () => history.back()], ["Choose difficulty", () => go("difficulty"), true, "next"]]);
     } else if (stars > 0) {
-      showResult(stars, titleFor(stars), mistakesText(res), [["Skip tutorial", skipTutorial], ["Next lesson ▶", () => playTutorial(G.step + 1), true]]);
+      showResult(stars, titleFor(stars), mistakesText(res), [["Skip tutorial", skipTutorial], ["Next lesson", () => playTutorial(G.step + 1), true, "next"]]);
     } else {
-      showResult(stars, "Not quite", `${mistakesText(res)}. Look at the ✓ and ✕ marks, then try again.`,
-        [["Skip tutorial", skipTutorial], ["Try again ▶", () => playTutorial(G.step), true]]);
+      showResult(stars, "Not quite", `${mistakesText(res)}. Check the marks on the board, then try again.`,
+        [["Skip tutorial", skipTutorial], ["Try again", () => playTutorial(G.step), true, "replay"]]);
     }
     startSimSoon();
     return;
@@ -356,16 +361,16 @@ function finish(res) {
       const coins = stars * COIN_MULT[G.diff];
       S.coins += coins;
       S.totalStars += stars;
-      text = `${mistakesText(res)} · +${coins} 🪙`;
+      text = `${mistakesText(res)} · +${coinsHTML(coins)}`;
     } else {
       store.loseLife(S);
-      text = `${mistakesText(res)} · −1 ❤️`;
+      text = `${mistakesText(res)} · −1 ${icon("heart", "fill heart-on")}`;
     }
     store.recordDifficulty(S, G.diff, stars);
     store.save(S);
     updateBar();
-    const next = S.lives > 0 ? "Next puzzle ▶" : "Out of hearts";
-    showResult(stars, titleFor(stars), text, [["Difficulty", () => history.back()], [next, () => playDifficulty(G.diff), true]]);
+    const next = S.lives > 0 ? "Next puzzle" : "Out of hearts";
+    showResult(stars, titleFor(stars), text, [["Difficulty", () => history.back()], [next, () => playDifficulty(G.diff), true, "next"]]);
     startSimSoon();
     return;
   }
@@ -377,8 +382,8 @@ function finish(res) {
   store.save(S);
   updateBar();
   const streak = store.currentDailyStreak(S, G.date);
-  showResult(stars, titleFor(stars), `${mistakesText(res)} · +${coins} 🪙 · 🔥 ${plural(streak, "day")}`,
-    [["Home", () => history.back()], ["Share 📤", shareDaily, true]]);
+  showResult(stars, titleFor(stars), `${mistakesText(res)} · +${coinsHTML(coins)} · ${icon("flame")} ${plural(streak, "day")}`,
+    [["Home", () => history.back()], ["Share", shareDaily, true, "share"]]);
   startSimSoon();
 }
 
@@ -399,13 +404,14 @@ function showResult(stars, title, text, buttons) {
   $("stars").hidden = stars === null;
   [...$("stars").children].forEach((s, i) => s.classList.toggle("on", stars !== null && i < stars));
   $("resultTitle").textContent = title;
-  $("resultText").textContent = text;
+  $("resultText").innerHTML = text;
   const box = $("resultButtons");
   box.innerHTML = "";
-  for (const [label, fn, primary] of buttons) {
+  for (const [label, fn, primary, ic] of buttons) {
     const b = document.createElement("button");
-    b.textContent = label;
-    if (primary) b.className = "primary";
+    // Forward arrows read better after the label; other icons go before it.
+    b.innerHTML = ic === "next" ? label + icon(ic) : (ic ? icon(ic) : "") + label;
+    b.className = primary ? "primary" : "soft";
     b.onclick = fn;
     box.appendChild(b);
   }
@@ -435,22 +441,33 @@ function skipTutorial() {
 }
 $("tutorialBtn").onclick = () => playTutorial(0);
 
+// Little 3×3 badges that fill up as the difficulty rises.
+const TINTS = ["survive", "survive", "born", "born", "die", "die"];
+const DOTS = [
+  [0, 0, 0, 0, 1, 1, 0, 0, 0],
+  [0, 1, 0, 0, 1, 1, 0, 0, 0],
+  [0, 1, 0, 0, 1, 1, 1, 0, 0],
+  [1, 1, 0, 0, 1, 1, 1, 0, 0],
+  [1, 1, 0, 1, 1, 1, 1, 0, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1],
+].map((row) => row.map(Boolean));
+
 function renderDifficulties() {
   $("diffLives").innerHTML = livesHTML();
   const list = $("diffList");
   if (list.childElementCount !== DIFFICULTIES.length) {
     list.innerHTML = DIFFICULTIES.map((d, i) => `
-      <button class="diff" data-id="${d.id}">
-        <span class="diff-emoji">${d.emoji}</span>
+      <button class="diff" data-id="${d.id}" style="--tint: var(--${TINTS[i]})">
+        <span class="diff-badge"><span>${DOTS[i].map((on) => `<i${on ? ' class="on"' : ""}></i>`).join("")}</span></span>
         <span class="diff-text"><b>${d.name}</b><small>${d.size}×${d.size} board · ${d.live[0]}–${d.live[1]} blocks</small></span>
         <span class="diff-stats"></span>
-        <span class="diff-meter">${DIFFICULTIES.map((_, j) => j <= i ? `<i style="background:var(--${i < 2 ? "survive" : i < 4 ? "born" : "die"})"></i>` : "<i></i>").join("")}</span>
+        <span class="diff-meter">${DIFFICULTIES.map((_, j) => `<i${j <= i ? ' class="on"' : ""}></i>`).join("")}</span>
       </button>`).join("");
     list.querySelectorAll(".diff").forEach((b) => (b.onclick = () => playDifficulty(b.dataset.id)));
   }
   list.querySelectorAll(".diff").forEach((b) => {
     const st = S.diffStats[b.dataset.id];
-    b.querySelector(".diff-stats").textContent = st?.solved ? `${st.solved} solved · ${st.perfect} ✨` : "";
+    b.querySelector(".diff-stats").innerHTML = st?.solved ? `${icon("star", "fill")}${st.solved} solved` : "";
     b.classList.toggle("last", b.dataset.id === S.lastDifficulty);
   });
 }
@@ -494,7 +511,7 @@ function nextEndlessRound() {
   const sig = signature(e.cells);
   const round = e.seen.has(sig) ? null : endlessRound(e.cells, ENDLESS_SIZE);
   if (!round) {
-    toast("The pattern settled down 🌱 Here's a fresh one", 2200);
+    toast("The pattern settled down. Here's a fresh one", 2200);
     return newEndlessPattern();
   }
   e.seen.add(sig);
@@ -508,17 +525,17 @@ function endlessAnswered(res) {
   else e.lives--;
   updateBar();
   if (e.lives > 0) {
-    const text = res.stars > 0 ? `${mistakesText(res)} · step ${e.steps} done` : `${mistakesText(res)} · −1 ❤️`;
-    showResult(res.stars, titleFor(res.stars), text, [["Home", () => history.back()], ["Next step ▶", nextEndlessRound, true]]);
+    const text = res.stars > 0 ? `${mistakesText(res)} · step ${e.steps} done` : `${mistakesText(res)} · −1 ${icon("heart", "fill heart-on")}`;
+    showResult(res.stars, titleFor(res.stars), text, [["Home", () => history.back()], ["Next step", nextEndlessRound, true, "next"]]);
     store.save(S);
     return;
   }
   const best = e.steps > S.endlessBest;
   S.endlessBest = Math.max(S.endlessBest, e.steps);
   store.save(S);
-  showResult(null, best && e.steps ? "New best! 🏆" : "Run over",
+  showResult(null, best && e.steps ? "New best!" : "Run over",
     `You predicted ${plural(e.steps, "step")} · best ${S.endlessBest}`,
-    [["Home", () => history.back()], ["New run", playEndless, true]]);
+    [["Home", () => history.back()], ["New run", playEndless, true, "replay"]]);
 }
 
 // ---------- Daily ----------
@@ -539,7 +556,7 @@ function playDaily() {
     animateReveal(G.puzzle, G.result, true);
     showResult(saved.stars, "Come back tomorrow",
       `You got ${starText(saved.stars)} today · next puzzle in ${hoursLeft()}`,
-      [["Home", () => history.back()], ["Share 📤", shareDaily, true]]);
+      [["Home", () => history.back()], ["Share", shareDaily, true, "share"]]);
     startSimSoon(600);
   }
 }
@@ -615,7 +632,7 @@ function nextRush() {
 
 function rushAnswered(res) {
   if (G.rush.over) return;
-  if (res.stars === 3) { G.rush.score++; toast("✓ +1", 600); }
+  if (res.stars === 3) { G.rush.score++; toast("+1", 600); }
   updateBar();
   nextRush();
 }
@@ -632,9 +649,9 @@ function endRush() {
   S.coins += r.score;
   store.save(S);
   updateBar();
-  showResult(null, best && r.score ? "New best! 🏆" : "Time's up!",
-    `You solved ${plural(r.score, "puzzle")} · best ${S.rushBest} · +${r.score} 🪙`,
-    [["Home", () => history.back()], ["Play again", playRush, true]]);
+  showResult(null, best && r.score ? "New best!" : "Time's up",
+    `You solved ${plural(r.score, "puzzle")} · best ${S.rushBest} · +${coinsHTML(r.score)}`,
+    [["Home", () => history.back()], ["Play again", playRush, true, "replay"]]);
 }
 
 function stopRush() { clearInterval(rushTimer); rushTimer = null; }
@@ -651,12 +668,12 @@ function refreshNoLives() {
   $("nextLife").textContent = mmss(store.nextLifeIn(S));
   const btn = $("freeLifeBtn");
   if (S.lives > 0) {
-    btn.querySelector(".big-title").textContent = "▶ Keep playing";
+    btn.querySelector(".big-title").textContent = "Keep playing";
     $("freeLifeSub").textContent = `You have ${plural(S.lives, "heart")}`;
     btn.disabled = false;
   } else {
     const left = freeHeartsLeft();
-    btn.querySelector(".big-title").textContent = "❤️ Get a heart";
+    btn.querySelector(".big-title").textContent = "Get a heart";
     $("freeLifeSub").textContent = left > 0 ? `${left} free today` : "No free hearts left today";
     btn.disabled = left <= 0;
   }
@@ -677,7 +694,7 @@ $("freeLifeBtn").onclick = async () => {
 
 // ---------- Themes ----------
 function renderThemes() {
-  $("themeCoins").textContent = `🪙 ${S.coins}`;
+  $("themeCoins").innerHTML = coinsHTML(S.coins);
   const list = $("themeList");
   list.innerHTML = "";
   for (const t of THEMES) {
@@ -686,7 +703,7 @@ function renderThemes() {
     b.className = "theme" + (on ? " on" : "");
     const v = t.vars;
     b.innerHTML = `<span class="swatches" style="background:${v.bg}"><i style="background:${v.live}"></i><i style="background:${v.survive}"></i><i style="background:${v.die}"></i><i style="background:${v.born}"></i></span>
-      <b>${t.name}</b><small>${on ? "In use" : owned ? "Use" : `🪙 ${t.price}`}</small>`;
+      <b>${t.name}</b><small>${on ? icon("check") + "In use" : owned ? "Use" : coinsHTML(t.price)}</small>`;
     b.onclick = () => {
       if (!owned) {
         if (S.coins < t.price) { toast(`You need ${t.price - S.coins} more coins`); return; }
@@ -715,13 +732,13 @@ $("playgroundBtn").onclick = () => {
       step: "Free play", title: "Playground",
       body: "No levels and no score. Draw any pattern on an endless board and watch the rules of life play out, step by step.",
       how: [
-        ["✏️", "<b>Tap</b> squares to draw or erase cells, then press <b>▶ Start</b> to watch them evolve."],
-        ["👣", "Use <b>Next</b> and <b>Undo</b> to go one step at a time: guess first, then check."],
-        ["🎨", "Turn on <b>Colour hints</b> to see what survives 🟢, dies 🔴 and is born 🟡 next."],
-        ["🛸", "Watch the starter patterns: the <b>glider</b> walks across the board, the <b>blinker</b> flips forever."],
-        ["🎲", "<b>Random</b> fills the screen. See what's left standing after a few hundred steps."],
-      ].map(([icon, text]) => `<p><span class="how-icon">${icon}</span><span>${text}</span></p>`).join(""),
-      button: "Start playing ▶",
+        ["pencil", "<b>Tap</b> squares to draw or erase cells, then press <b>Start</b> to watch them evolve."],
+        ["steps", "Use <b>Next</b> and <b>Undo</b> to go one step at a time: guess first, then check."],
+        ["eye", 'Turn on <b>Colour hints</b> to see what survives <i class="sw survive"></i>, dies <i class="sw die"></i> and is born <i class="sw born"></i> next.'],
+        ["orbit", "Watch the starter patterns: the <b>glider</b> walks across the board, the <b>blinker</b> flips forever."],
+        ["dice", "<b>Random</b> fills the screen. See what's left standing after a few hundred steps."],
+      ].map(([ic, text]) => `<p><span class="how-icon">${icon(ic)}</span><span>${text}</span></p>`).join(""),
+      button: "Start playing",
     });
   }
 };

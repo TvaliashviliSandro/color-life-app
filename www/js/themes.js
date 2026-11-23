@@ -1,15 +1,16 @@
-// Colour themes you can buy with coins. `live` is the colour of a live cell.
+// Colour themes you can buy with coins. Soft, low-glare palettes.
+// `live` is the colour of a live cell; `on-accent` is text on accent buttons.
 export const THEMES = [
   { id: "classic", name: "Classic", price: 0,
-    vars: { bg: "#0f1115", panel: "#171a21", raised: "#1f2430", line: "#2a2f3a", live: "#e6e9f0", born: "#facc15", die: "#ef4444", survive: "#22c55e", accent: "#3b82f6" } },
-  { id: "neon", name: "Neon", price: 60,
-    vars: { bg: "#07060f", panel: "#110f22", raised: "#1a1733", line: "#2b2650", live: "#f5f3ff", born: "#fde047", die: "#ff2e88", survive: "#2dfcb4", accent: "#a855f7" } },
+    vars: { bg: "#131519", panel: "#1b1e24", raised: "#23272f", line: "#2d323b", live: "#ebe7df", born: "#e5c07b", die: "#e07b6a", survive: "#8cc09a", accent: "#8aa4f4", accent2: "#b49bdc", "on-accent": "#12151b" } },
+  { id: "dusk", name: "Dusk", price: 60,
+    vars: { bg: "#15131c", panel: "#1d1a27", raised: "#262233", line: "#332e43", live: "#ece6f5", born: "#f0c987", die: "#ee8a9a", survive: "#8fd0b8", accent: "#b39cf2", accent2: "#f2a7c9", "on-accent": "#16121f" } },
   { id: "ocean", name: "Ocean", price: 120,
-    vars: { bg: "#06131c", panel: "#0b1f2c", raised: "#11293a", line: "#1b3a50", live: "#e0f2fe", born: "#fcd34d", die: "#fb7185", survive: "#2dd4bf", accent: "#0ea5e9" } },
-  { id: "sunset", name: "Sunset", price: 200,
-    vars: { bg: "#1a0f14", panel: "#26141c", raised: "#331b26", line: "#4a2735", live: "#fff1e6", born: "#ffd166", die: "#ef476f", survive: "#06d6a0", accent: "#f97316" } },
+    vars: { bg: "#0f171c", panel: "#152129", raised: "#1c2b35", line: "#263a46", live: "#e3eef2", born: "#ecc77d", die: "#ee8f80", survive: "#7fcbb8", accent: "#7cc3e6", accent2: "#a3b7f0", "on-accent": "#0d1a21" } },
+  { id: "forest", name: "Forest", price: 200,
+    vars: { bg: "#121714", panel: "#19201b", raised: "#212a23", line: "#2c372e", live: "#ebeadf", born: "#dcc27a", die: "#d98a72", survive: "#a3c98a", accent: "#9bc59d", accent2: "#c8b48a", "on-accent": "#121812" } },
   { id: "paper", name: "Paper", price: 300, light: true,
-    vars: { bg: "#f5f1e8", panel: "#fffdf8", raised: "#ece6d8", line: "#d8cfbd", live: "#2b2a28", born: "#e0a800", die: "#d64545", survive: "#2f9e44", accent: "#3b5bdb" } },
+    vars: { bg: "#f3efe7", panel: "#fbf8f2", raised: "#ebe5da", line: "#ddd5c6", live: "#3a3733", born: "#c9971f", die: "#c8614e", survive: "#4f9a6a", accent: "#4f6fc4", accent2: "#8a68b8", "on-accent": "#fbf8f2" } },
 ];
 
 export function applyTheme(id) {

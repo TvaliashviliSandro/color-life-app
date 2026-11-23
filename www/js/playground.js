@@ -1,6 +1,7 @@
 // Playground: the original Color Life sandbox. An endless board you draw on,
 // then watch it evolve, with colour hints for what happens next.
 import { key, parse, step } from "./life.js";
+import { icon } from "./icons.js";
 
 const $ = (id) => document.getElementById(id);
 let ui, canvas, ctx;
@@ -172,7 +173,7 @@ function render() {
 // ---------- UI sync ----------
 function updateStats() { ui.gen.textContent = gen; ui.pop.textContent = live.size; updateButtons(); }
 function updateButtons() {
-  ui.run.textContent = running ? "⏸ Stop" : "▶ Start";
+  ui.run.innerHTML = running ? `${icon("pause")}<span>Stop</span>` : `${icon("play")}<span>Start</span>`;
   ui.run.classList.toggle("primary", !running);
   ui.undo.disabled = history.length === 0;
 }
