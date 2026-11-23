@@ -14,7 +14,7 @@ next step, then watch it happen. Each puzzle takes 10–30 seconds.
 - **⚡ Rush:** as many perfect answers as you can in 60 seconds.
 - **🧪 Playground:** the original Color Life sandbox. Draw on an endless board, press Start and watch it
   evolve, with colour hints for what survives, dies and is born next.
-- **🎨 Themes:** stars earn coins; coins unlock colour themes.
+- **🎨 Themes:** System, Light and Dark are free (System follows the phone). Colour themes unlock with coins.
 
 ## Playtest build (current)
 

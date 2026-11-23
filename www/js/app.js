@@ -7,7 +7,7 @@ import {
 } from "./puzzles.js";
 import { key, parse, neighbours } from "./life.js";
 import * as store from "./store.js";
-import { THEMES, applyTheme } from "./themes.js";
+import { THEMES, APPEARANCES, FREE, applyTheme, previewVars } from "./themes.js";
 import { openPlayground, closePlayground } from "./playground.js";
 import { createSim } from "./sim.js";
 import { icon, hydrateIcons } from "./icons.js";
@@ -65,14 +65,38 @@ function earn(n) {
 // ---------- Navigation (also makes Android's back button work) ----------
 const SCREENS = ["home", "game", "themes", "playground", "difficulty", "shop"];
 const MODALS = ["rules", "lesson", "continueModal", "endModal", "buyModal"];
+// Page changes: a transparent layer blocks extra taps for a moment, and a spinner
+// appears if the change takes longer than a blink (e.g. rewinding history on Android).
+let navTimer, navGuard, awaitingPop = false;
+function navBusy(maxMs = 1200) {
+  const l = $("loader");
+  l.hidden = false;
+  l.classList.remove("visible");
+  clearTimeout(navTimer); clearTimeout(navGuard);
+  navTimer = setTimeout(() => l.classList.add("visible"), 250);
+  navGuard = setTimeout(navDone, maxMs);
+}
+function navDone() {
+  clearTimeout(navTimer); clearTimeout(navGuard);
+  awaitingPop = false;
+  $("loader").hidden = true;
+  $("loader").classList.remove("visible");
+}
 function show(id) {
   for (const s of SCREENS) $(s).hidden = s !== id;
   current = id;
   refresh();
+  if (!awaitingPop) { clearTimeout(navGuard); navGuard = setTimeout(navDone, 220); }
 }
 function go(id) {
+  navBusy();
   if (id !== current) history.pushState({ s: id, d: (history.state?.d || 0) + 1 }, "");
   show(id);
+}
+function back() {
+  navBusy();
+  awaitingPop = true;
+  history.back();
 }
 function leaveScreen() {
   stopRush();
@@ -81,13 +105,18 @@ function leaveScreen() {
   G = null;
   for (const m of MODALS) $(m).hidden = true;
 }
+// Home shows instantly; the browser history catches up in the background.
 function goHomeNow() {
   const d = history.state?.d || 0;
+  navBusy();
+  leaveScreen();
+  if (d > 0) awaitingPop = true;
+  show("home");
   if (d > 0) history.go(-d);
-  else { leaveScreen(); show("home"); }
 }
 history.replaceState({ s: "home", d: 0 }, "");
 window.addEventListener("popstate", (e) => {
+  if (awaitingPop) setTimeout(navDone, 150);
   const target = e.state?.s || "home";
   if (target === "game" && G) {             // back from the shop to a puzzle in progress
     show("game");
@@ -97,7 +126,7 @@ window.addEventListener("popstate", (e) => {
   leaveScreen();
   show(["home", "difficulty", "themes", "shop"].includes(target) ? target : "home");
 });
-document.querySelectorAll("[data-back]").forEach((b) => (b.onclick = () => history.back()));
+document.querySelectorAll("[data-back]").forEach((b) => (b.onclick = back));
 document.querySelectorAll("[data-shop]").forEach((b) => (b.onclick = openShop));
 
 // ---------- Status ----------
@@ -598,7 +627,7 @@ function finish(win) {
     }
     store.recordDaily(S, G.date, {
       stars, win, checks: G.attempts.length + (win ? 1 : 0), firstMarks: G.attempts[0]?.marks || [...G.marks],
-      attempts: G.attempts, used: G.used, finalMarks: [...G.marks],
+      attempts: G.attempts, used: G.used, finalMarks: [...G.marks], continues: G.continues,
     });
     buttons = [["Home", goHomeNow, false, "back"], ["Share", shareDaily, true, "share"]];
   }
@@ -850,25 +879,43 @@ const hoursLeft = () => {
 };
 $("dailyBtn").onclick = playDaily;
 
+// Wordle-style result, cropped to the cells that mattered:
+// green = right on the first check, yellow = fixed on a later check, red = never right.
 function dailyShareText() {
   const date = G.date, saved = S.daily.results[date], p = G.puzzle;
-  const res = grade(p, new Map(saved.firstMarks));          // grid = how your first Check went
-  const emoji = { ok: "🟩", wrong: "🟥", missed: "🟨" };
+  const first = grade(p, new Map(saved.firstMarks)).cells;
+  const final = grade(p, new Map(saved.finalMarks || saved.firstMarks)).cells;
+  const cells = new Set([...first.keys(), ...final.keys()]);
+  let x0 = p.size, y0 = p.size, x1 = -1, y1 = -1;
+  for (const k of cells) {
+    const [x, y] = parse(k);
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+  }
   const rows = [];
-  for (let y = 0; y < p.size; y++) {
+  for (let y = y0; y <= y1; y++) {
     let row = "";
-    for (let x = 0; x < p.size; x++) row += emoji[res.cells.get(key(x, y))] || "⬛";
+    for (let x = x0; x <= x1; x++) {
+      const k = key(x, y);
+      if (!cells.has(k)) row += "⬛";
+      else if (first.get(k) === "ok") row += "🟩";
+      else if (saved.win || final.get(k) === "ok") row += "🟨";
+      else row += "🟥";
+    }
     rows.push(row);
   }
-  const used = saved.used || [];
-  const names = [...new Set(used)].map((id) => abilityById(id).name).join(", ");
+  const headline = !saved.win ? "Not solved this time"
+    : saved.continues ? `Solved in ${plural(saved.checks, "check")}, with a continue`
+    : saved.checks === 1 ? `Solved on the first check · ${saved.stars}/3 hearts`
+    : `Solved in ${saved.checks} checks · ${saved.stars}/3 hearts`;
+  const used = [...new Set(saved.used || [])].map((id) => abilityById(id).name);
+  const streak = store.currentDailyStreak(S, date);
   return [
-    `Color Life Daily #${store.dailyNumber(date)} ${"⭐".repeat(saved.stars) || "0/3"}`,
+    `Color Life · Daily #${store.dailyNumber(date)}`,
+    headline,
     ...rows,
-    saved.win ? `Solved in ${plural(saved.checks, "check")}` : "Not solved",
-    used.length ? `⚠️ Used ${plural(used.length, "ability")}: ${names}` : "No abilities used",
-    `🔥 ${plural(store.currentDailyStreak(S, date), "day")} streak`,
-    SITE,
+    ...(used.length ? [`Help used: ${used.join(", ")}`] : []),
+    ...(streak > 1 ? [`Streak: ${streak} days`] : []),
+    SITE.replace(/^https?:\/\//, "").replace(/\/$/, ""),
   ].join("\n");
 }
 
@@ -1027,14 +1074,24 @@ function buyPack(p) {
 $("buyCancel").onclick = () => ($("buyModal").hidden = true);
 
 // ---------- Themes ----------
+function setTheme(id) {
+  S.theme = id;
+  applyTheme(id);
+  store.save(S);
+  renderThemes();
+}
+
 function renderThemes() {
+  $("appearance").innerHTML = APPEARANCES.map((a) =>
+    `<button class="${S.theme === a.id ? "on" : ""}" data-id="${a.id}">${icon(a.icon)}<span>${a.name}</span></button>`).join("");
+  $("appearance").querySelectorAll("button").forEach((b) => (b.onclick = () => setTheme(b.dataset.id)));
   const list = $("themeList");
   list.innerHTML = "";
   for (const t of THEMES) {
-    const owned = S.themes.includes(t.id), on = S.theme === t.id;
+    const owned = FREE.includes(t.id) || S.themes.includes(t.id), on = S.theme === t.id;
     const b = document.createElement("button");
     b.className = "theme" + (on ? " on" : "");
-    const v = t.vars;
+    const v = previewVars(t.id);
     b.innerHTML = `<span class="swatches" style="background:${v.bg}"><i style="background:${v.live}"></i><i style="background:${v.survive}"></i><i style="background:${v.die}"></i><i style="background:${v.born}"></i></span>
       <b>${t.name}</b><small>${on ? icon("check") + "In use" : owned ? "Use" : coinsHTML(t.price)}</small>`;
     b.onclick = () => {
@@ -1043,10 +1100,7 @@ function renderThemes() {
         S.themes.push(t.id);
         toast(`${t.name} unlocked!`);
       }
-      S.theme = t.id;
-      applyTheme(t.id);
-      store.save(S);
-      renderThemes();
+      setTheme(t.id);
     };
     list.appendChild(b);
   }

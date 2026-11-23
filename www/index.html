@@ -169,7 +169,10 @@
   <!-- ============ Themes ============ -->
   <section id="themes" class="screen" hidden>
     <header class="bar"><button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button><div class="bar-title"><b>Themes</b></div><button class="pill coins" data-shop id="themeCoins"></button></header>
-    <p class="hint">Earn coins with every star, then unlock new colours.</p>
+    <h3 class="section-title">Appearance</h3>
+    <div class="appearance" id="appearance"></div>
+    <h3 class="section-title">Colour themes</h3>
+    <p class="muted section-note">Unlock with coins from your stars. More are coming.</p>
     <div id="themeList" class="theme-list"></div>
   </section>
 
@@ -289,6 +292,9 @@
   </div>
 
   <div id="toast" class="toast" hidden></div>
+
+  <!-- Blocks extra taps while a page changes; the spinner only shows if it takes a moment. -->
+  <div id="loader" class="loader" hidden><span class="spinner"></span></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

@@ -20,7 +20,7 @@ const defaults = () => ({
   perfectStreak: 0, bestPerfect: 0,
   daily: { last: null, streak: 0, best: 0, results: {} },
   rushBest: 0,
-  themes: ["classic"], theme: "classic",
+  themes: [], theme: "system",
   seenRules: false,
   seenPlayground: false,
 });
@@ -35,6 +35,9 @@ export function load() {
       // Saves from the old level system: anyone past level 5 has done the tutorial.
       if (saved.level > 5) saved.tutorialDone = true;
       delete saved.level; delete saved.attempt;
+      // Old themes: Classic is now Dark, Paper is replaced by the new Light.
+      if (saved.theme === "classic") saved.theme = "dark";
+      if (saved.theme === "paper" || saved.theme === "neon") saved.theme = "light";
       s = { ...s, ...saved, daily: { ...s.daily, ...saved.daily } };
     }
   } catch (_) {}
