@@ -5,7 +5,7 @@ import {
   DIFFICULTIES, difficulty, TUTORIAL, fromTutorial, makePuzzle, puzzleShape, dailyPuzzle, rushConfig, grade,
   endlessStart, endlessRound, ENDLESS_SIZE,
 } from "./puzzles.js";
-import { key, parse, neighbours } from "./life.js";
+import { key, parse, neighbours, step } from "./life.js";
 import * as store from "./store.js";
 import { THEMES, APPEARANCES, FREE, applyTheme, previewVars } from "./themes.js";
 import { openPlayground, closePlayground } from "./playground.js";
@@ -64,7 +64,7 @@ function earn(n) {
 
 // ---------- Navigation (also makes Android's back button work) ----------
 const SCREENS = ["home", "game", "themes", "playground", "difficulty", "shop"];
-const MODALS = ["rules", "lesson", "continueModal", "endModal", "buyModal"];
+const MODALS = ["rules", "lesson", "continueModal", "endModal", "buyModal", "intro"];
 // Page changes: a transparent layer blocks extra taps for a moment, and a spinner
 // appears if the change takes longer than a blink (e.g. rewinding history on Android).
 let navTimer, navGuard, awaitingPop = false;
@@ -190,25 +190,61 @@ function renderBoard(el, size, live, o = {}) {
       if (r === "wrong") cls += " is-wrong";
       let inner = r ? `<span class="badge ${r}">${icon(BADGE[r])}</span>` : "";
       if (o.locked?.has(k)) inner += `<span class="lock-dot">${icon("lock")}</span>`;
-      if (o.counts) inner += `<span class="count">${neighbours(o.counts, x, y)}</span>`;
+      if (o.counts) inner += `<span class="count${o.countStyle ? " " + o.countStyle : ""}">${neighbours(o.counts, x, y)}</span>`;
       html += `<div class="${cls}" data-k="${k}" style="--d:${(x + y) * 35}ms">${inner}</div>`;
     }
   el.innerHTML = html;
 }
 
 function renderSolve() {
+  if (G.comparing) { renderBoard($("board"), G.puzzle.size, G.start); return; }
+  const counter = Date.now() < G.countUntil;
   renderBoard($("board"), G.puzzle.size, G.start, {
     marks: G.marks, flags: G.flags, locked: G.locked,
     scan: G.scan ? new Set(G.puzzle.answer.born) : null,
-    counts: Date.now() < G.countUntil ? G.start : null,
+    // The Counter ability shows big numbers; the tutorial always shows small ones in the corner.
+    counts: counter || G.mode === "tutorial" ? G.start : null,
+    countStyle: counter ? "" : "corner",
   });
 }
+
+// ---------- Minimap: the starting white blocks, following the board's zoom ----------
+function renderMini() {
+  renderBoard($("miniBoard"), G.puzzle.size, G.start);
+  syncMini();
+}
+function syncMini() {
+  const f = $("miniViewport").clientWidth / ($("boardViewport").clientWidth || 1);
+  $("miniBoard").style.transform = zoom.scale === 1 ? "" : `translate(${zoom.tx * f}px, ${zoom.ty * f}px) scale(${zoom.scale})`;
+}
+// Press and hold the minimap to show the starting board on the big board too.
+(() => {
+  const mm = $("minimap");
+  let downAt = 0;
+  const on = () => {
+    downAt = Date.now();
+    if (!G?.puzzle || !["solve", "target"].includes(G.phase)) return;
+    G.comparing = true;
+    $("boardViewport").classList.add("comparing");
+    renderSolve();
+  };
+  const off = () => {
+    if (!G?.comparing) return;
+    G.comparing = false;
+    $("boardViewport").classList.remove("comparing");
+    renderSolve();
+  };
+  mm.addEventListener("pointerdown", on);
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) mm.addEventListener(ev, off);
+  mm.addEventListener("click", () => { if (Date.now() - downAt < 300) toast("This is how the board started. Hold it to compare on the big board."); });
+  mm.addEventListener("contextmenu", (e) => e.preventDefault());
+})();
 
 // ---------- Tutorial lessons (popup before each of the 5 tutorial puzzles) ----------
 // Example grids are 3×3, middle cell = index 4. "on" = live, "" = empty.
 const TAP = {
-  survive: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="survive">●</span></span><span>Tap a white cell <b>once</b>: it survives</span>`,
-  die: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="die">✕</span></span><span>Tap a white cell <b>twice</b>: it dies</span>`,
+  survive: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="survive">●</span></span><span>Tap a live cell <b>once</b>: it survives</span>`,
+  die: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="die">✕</span></span><span>Tap a live cell <b>twice</b>: it dies</span>`,
   born: `<span class="tap-demo"><span></span>${icon("chevron", "tiny")}<span class="born">+</span></span><span>Tap an <b>empty</b> cell: it's born</span>`,
 };
 const LESSONS = [
@@ -230,7 +266,7 @@ const LESSONS = [
     how: ["survive", "die", "born"] },
   { title: "Put it all together",
     rules: true,
-    body: "Use every rule at once. Check each white cell, then look for empty cells with exactly 3 neighbours. A wrong Check flags your mistakes so you can fix them.",
+    body: "Use every rule at once. Check each live cell, then look for empty cells with exactly 3 neighbours. A wrong Check flags your mistakes so you can fix them.",
     how: ["survive", "die", "born"] },
 ];
 const GLYPH = { survive: "●", die: "✕", born: "+" };
@@ -382,8 +418,10 @@ function startPuzzle(puzzle) {
   $("controls").hidden = false;
   $("targetBanner").hidden = true;
   $("board").classList.remove("locked");
+  G.comparing = false;
   resetZoom();
   renderSolve();
+  renderMini();
   renderAbilities();
   $("hint").innerHTML = hintFor();
   updateBar();
@@ -404,6 +442,7 @@ function applyZoom() {
   $("board").style.transform = zoom.scale === 1 ? "" : `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`;
   $("zoomReset").hidden = zoom.scale < 1.05;
   vp.classList.toggle("zoomed", zoom.scale > 1.05);
+  syncMini();
 }
 function resetZoom() {
   Object.assign(zoom, { scale: 1, tx: 0, ty: 0, pinch: null, drag: null });
@@ -483,10 +522,12 @@ function hideZoomTip(seen) {
 }
 
 function hintFor() {
+  if (G.mode === "tutorial")
+    return "The small number on each cell is how many live neighbours it has.";
   if (G.mode === "endless" && G.endless.steps === 0)
     return "Your answer becomes the next board. The edge is a wall: nothing exists outside it.";
   if (G.mode === "daily" || (G.mode === "play" && (S.diffStats[G.diff]?.solved || 0) < 2))
-    return 'Mark every white cell <i class="sw survive"></i> or <i class="sw die"></i>, and the empty cells that will be born <i class="sw born"></i>. Each wrong Check costs a heart.';
+    return 'Mark every live cell <i class="sw survive"></i> or <i class="sw die"></i>, and the empty cells that will be born <i class="sw born"></i>. Each wrong Check costs a heart.';
   return "";
 }
 
@@ -559,7 +600,7 @@ async function check() {
   const unmarked = [...G.start].filter((k) => !G.marks.has(k));
   if (unmarked.length) {
     for (const k of unmarked) $("board").querySelector(`[data-k="${k}"]`)?.classList.add("need");
-    toast(`Mark every white cell first (${unmarked.length} left)`);
+    toast(`Mark every live cell first (${unmarked.length} left)`);
     return;
   }
   const res = grade(p, G.marks);
@@ -1245,8 +1286,107 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && current === "game" && G?.phase === "solve") check();
 });
 
+// ---------- Intro: what the game is, and why ----------
+const INTRO = [
+  { title: "A tiny world of cells", demo: "life",
+    caption: "Watch it run: every tick is one step.",
+    body: "Each square is a <b>cell</b>. Filled squares are <b>live cells</b>. Every <b>step</b>, all cells change at once, following four simple rules." },
+  { title: "Four simple rules", demo: "rules",
+    body: "A cell only looks at its <b>8 neighbours</b>: the squares touching it, diagonals too." },
+  { title: "Your job: predict the next step", demo: "predict",
+    body: 'Before the step happens, mark what each cell will do: <i class="sw survive"></i> <b>survives</b>, <i class="sw die"></i> <b>dies</b>, <i class="sw born"></i> <b>is born</b>. Then press <b>Check</b> and watch it happen.' },
+  { title: "Why play?", demo: "why",
+    body: "It's a puzzle about reading patterns. Every board is new, you get quicker at seeing what comes next, and after each puzzle you watch where your pattern goes." },
+];
+let introIndex = 0, introTimer = null;
+
+function showIntro(i = 0) {
+  introIndex = i;
+  const s = INTRO[i];
+  $("introStep").textContent = `${i + 1} of ${INTRO.length}`;
+  $("introTitle").textContent = s.title;
+  $("introBody").innerHTML = s.body;
+  $("introCaption").textContent = s.caption || "";
+  $("introCaption").hidden = !s.caption;
+  $("introDots").innerHTML = INTRO.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("");
+  $("introBack").style.visibility = i === 0 ? "hidden" : "";
+  $("introNext").innerHTML = i < INTRO.length - 1 ? `Next${icon("next")}` : S.tutorialDone ? "Let's play" : `Start the tutorial${icon("next")}`;
+  $("introSkip").hidden = i === INTRO.length - 1;
+  clearInterval(introTimer);
+  playIntroDemo(s.demo);
+  $("intro").hidden = false;
+}
+function closeIntro(start) {
+  clearInterval(introTimer);
+  $("intro").hidden = true;
+  if (!S.seenIntro) { S.seenIntro = true; store.save(S); }
+  if (start && !S.tutorialDone) playTutorial(0);
+}
+$("introNext").onclick = () => (introIndex < INTRO.length - 1 ? showIntro(introIndex + 1) : closeIntro(true));
+$("introBack").onclick = () => showIntro(Math.max(0, introIndex - 1));
+$("introSkip").onclick = () => closeIntro(false);
+$("introAgain").onclick = () => { closeRules(); showIntro(0); };
+
+function playIntroDemo(kind) {
+  const box = $("introDemo");
+  if (kind === "rules") {
+    box.innerHTML = `<div class="intro-rules">
+      ${[["", "on", "", "", "on", "", "", "", ""], ["on", "", "", "", "on", "on", "", "", ""], ["on", "on", "on", "", "on", "", "on", "", "on"], ["on", "", "on", "", "", "", "", "on", ""]].map((g, i) => {
+        const res = ["die", "survive", "die", "born"][i];
+        const label = ["0–1 neighbours: dies", "2–3 neighbours: survives", "4+ neighbours: dies", "exactly 3: born"][i];
+        return `<div><div class="mini">${g.map((c, j) => `<i class="${j === 4 ? res : c}"></i>`).join("")}</div><small>${label}</small></div>`;
+      }).join("")}</div>`;
+    return;
+  }
+  if (kind === "why") {
+    box.innerHTML = `<ul class="intro-modes">
+      <li><span class="mode-dot">${icon("play")}</span><span><b>Play</b> from Very easy to Extreme</span></li>
+      <li><span class="mode-dot" style="--tint: var(--born)">${icon("calendar")}</span><span><b>Daily</b> puzzle to share</span></li>
+      <li><span class="mode-dot" style="--tint: var(--survive)">${icon("infinity")}</span><span><b>Endless</b>: follow one pattern</span></li>
+      <li><span class="mode-dot" style="--tint: var(--accent2)">${icon("flask")}</span><span><b>Playground</b> to just watch</span></li></ul>`;
+    return;
+  }
+  box.innerHTML = '<div class="board intro-board"></div>';
+  const board = box.firstChild;
+  if (kind === "life") {
+    // A glider and a blinker on a 9×9 board that wraps around, so it never stops.
+    const n = 9;
+    let cells = new Set(["1,0", "2,1", "0,2", "1,2", "2,2", "6,5", "6,6", "6,7"]);
+    const wrapStep = (c) => {
+      const big = new Set();
+      for (const k of c) { const [x, y] = parse(k); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) big.add(key(x + dx * n, y + dy * n)); }
+      const next = step(big), out = new Set();
+      for (const k of next) { const [x, y] = parse(k); if (x >= 0 && y >= 0 && x < n && y < n) out.add(k); }
+      return out;
+    };
+    const draw = () => renderBoard(board, n, cells);
+    draw();
+    introTimer = setInterval(() => { cells = wrapStep(cells); draw(); }, 650);
+    return;
+  }
+  if (kind === "predict") {
+    // A blinker: mark it cell by cell, press Check, see the step, repeat.
+    const n = 5, start = new Set(["2,1", "2,2", "2,3"]), next = new Set(["1,2", "2,2", "3,2"]);
+    const outcome = new Map([["2,1", "die"], ["2,3", "die"], ["2,2", "survive"], ["1,2", "born"], ["3,2", "born"]]);
+    const order = [["2,1", "die"], ["2,3", "die"], ["2,2", "survive"], ["1,2", "born"], ["3,2", "born"]];
+    const captions = ["This is the board now.", "Lonely: 1 neighbour, so it dies.", "Also 1 neighbour: dies.", "2 neighbours: survives.", "Empty with exactly 3 neighbours: born.", "Same here: born.", "Press Check…", "…and the step happens. Every guess was right!"];
+    // frames 0–5: marking one cell at a time · 6: press Check · 7: the step happens
+    let t = 0;
+    const draw = () => {
+      if (t <= 6) renderBoard(board, n, start, { marks: new Map(order.slice(0, Math.min(t, 5))) });
+      else renderBoard(board, n, next, { outcome, results: new Map([...outcome.keys()].map((k) => [k, "ok"])), flip: new Set(outcome.keys()) });
+      board.classList.toggle("checking", t === 6);
+      $("introCaption").textContent = captions[t];
+      $("introCaption").hidden = false;
+    };
+    draw();
+    introTimer = setInterval(() => { t = (t + 1) % 8; draw(); }, 1300);
+  }
+}
+
 // ---------- Start ----------
 show("home");
+if (!S.seenIntro) showIntro(0);
 
 // Offline support for the installable web app (not needed inside the Android app).
 if ("serviceWorker" in navigator && !window.Capacitor && location.protocol === "https:") {

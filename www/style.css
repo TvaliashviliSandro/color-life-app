@@ -852,3 +852,61 @@ button.small { padding: 7px 12px; font-size: 13px; }
 @keyframes pinch-a { 0%, 15% { transform: translate(-8px, 6px); } 60%, 80% { transform: translate(-36px, 22px); } 100% { transform: translate(-8px, 6px); } }
 @keyframes pinch-b { 0%, 15% { transform: translate(8px, -6px); } 60%, 80% { transform: translate(36px, -22px); } 100% { transform: translate(8px, -6px); } }
 .tap-demo.zoom-demo .ic { width: 20px; height: 20px; color: var(--accent); }
+
+/* ---------- Minimap of the starting board ---------- */
+.board-top {
+  width: min(100%, 440px, 46vh); display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+}
+.board-top .hearts-row { justify-content: flex-start; min-height: 0; padding-bottom: 4px; }
+.minimap {
+  margin-left: auto; flex: none; flex-direction: column; gap: 3px; padding: 4px 4px 3px;
+  background: var(--panel); border-radius: 12px; touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.mini-viewport { display: block; width: 58px; height: 58px; overflow: hidden; border-radius: 8px; }
+.mini-board { width: 100%; padding: 2px; --gap: 1px; border-radius: 0; transform-origin: 0 0; background: var(--bg); box-shadow: none !important; pointer-events: none; }
+.mini-board .cell { border-radius: 2px; }
+.minimap small { font-size: 9.5px; color: var(--muted); line-height: 1; letter-spacing: .2px; }
+.minimap:active { transform: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.board-viewport.comparing::after {
+  content: "Starting board"; position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--accent); color: var(--on-accent); z-index: 5; pointer-events: none;
+}
+
+/* Tutorial neighbour counts: a small number in the corner of each cell */
+.count.corner {
+  inset: auto; right: 4px; top: 2px; display: block;
+  font-size: calc(min(440px, 46vh, 100vw) / var(--n) * .2); font-weight: 700;
+  color: var(--muted); text-shadow: none;
+}
+.cell.live .count.corner, .cell[class*="m-"] .count.corner { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+
+/* ---------- Intro ---------- */
+.intro { z-index: 13; }
+.intro .modal-card { text-align: center; max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.intro h2 { margin: 0; font-size: 22px; }
+.intro .lesson-body { margin: 0; }
+.intro-demo { display: flex; justify-content: center; min-height: 150px; align-items: center; }
+.intro-board { width: 170px; --gap: 3px; border-radius: 12px; }
+.intro-board.checking { box-shadow: 0 0 0 3px var(--accent) !important; }
+.intro-caption { margin: 0; font-size: 13px; color: var(--accent); font-weight: 600; min-height: 1.3em; }
+.intro-rules { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.intro-rules > div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; background: var(--raised); border-radius: 12px; }
+.intro-rules small { font-size: 12px; color: var(--muted); }
+.intro-modes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; font-size: 14px; color: var(--muted); }
+.intro-modes li { display: flex; align-items: center; gap: 10px; }
+.intro-modes b { color: var(--text); }
+.intro-dots { display: flex; justify-content: center; gap: 6px; }
+.intro-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.intro-dots i.on { background: var(--accent); width: 18px; border-radius: 4px; }
+.intro button.primary .ic { order: 2; }
+.intro-again { margin-bottom: 8px; }
+.intro-again .ic { color: var(--accent); }
+
+@media (max-height: 700px) {
+  .board-top { width: min(100%, 440px, 42vh); }
+  .mini-viewport { width: 46px; height: 46px; }
+  .intro-demo { min-height: 120px; }
+  .intro-board { width: 140px; }
+}
+.intro .lesson-step { align-self: center; }

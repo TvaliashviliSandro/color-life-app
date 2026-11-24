@@ -85,7 +85,13 @@
     <p id="hint" class="hint"></p>
 
     <div class="stage">
-      <div class="hearts-row" id="heartsRow" hidden></div>
+      <div class="board-top">
+        <div class="hearts-row" id="heartsRow" hidden></div>
+        <button class="minimap" id="minimap" aria-label="Starting board. Hold to compare.">
+          <span class="mini-viewport" id="miniViewport"><span id="miniBoard" class="board mini-board"></span></span>
+          <small>Start · hold</small>
+        </button>
+      </div>
       <div class="board-viewport" id="boardViewport">
         <div id="board" class="board"></div>
         <button class="zoom-reset" id="zoomReset" hidden aria-label="Show the whole board"><i data-icon="fit"></i></button>
@@ -203,7 +209,7 @@
       </div>
       <h3 class="modes-title">How to answer</h3>
       <ul class="taps">
-        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="survive">●</i></span><span>Tap a white cell once: it <b>survives</b></span></li>
+        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="survive">●</i></span><span>Tap a live cell once: it <b>survives</b></span></li>
         <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="die">✕</i></span><span>Tap it twice: it <b>dies</b></span></li>
         <li><span class="tap-demo"><i></i><i data-icon="chevron" class="tiny"></i><i class="born">+</i></span><span>Tap an empty cell: it's <b>born</b></span></li>
         <li><span class="tap-demo zoom-demo"><i data-icon="search"></i></span><span>Big board? <b>Pinch to zoom</b> in, drag to move, pinch out to see it all</span></li>
@@ -220,6 +226,7 @@
           Use Next and Undo to go one step at a time, and turn on Colour hints to see what survives, dies and is born next.
           A good place to practise, test a guess, or just watch famous patterns like the glider walk across the board.</span></li>
       </ul>
+      <button class="soft wide intro-again" id="introAgain"><i data-icon="sparkle"></i>What is this game?</button>
       <button class="primary wide" id="rulesOk">Got it</button>
     </div>
   </div>
@@ -298,6 +305,23 @@
       <div class="end-coins" id="endCoins"></div>
       <button class="soft wide" id="endMistakes"><i data-icon="flag"></i><span id="endMistakesLabel">Check mistakes</span></button>
       <div class="pair" id="endButtons"></div>
+    </div>
+  </div>
+
+  <!-- ============ Intro: what the game is and why ============ -->
+  <div id="intro" class="modal intro" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+      <p class="lesson-step" id="introStep"></p>
+      <h2 id="introTitle"></h2>
+      <div class="intro-demo" id="introDemo"></div>
+      <p class="intro-caption" id="introCaption"></p>
+      <p class="lesson-body" id="introBody"></p>
+      <div class="intro-dots" id="introDots"></div>
+      <div class="pair">
+        <button class="soft" id="introBack">Back</button>
+        <button class="primary" id="introNext">Next</button>
+      </div>
+      <button class="link center" id="introSkip">Skip</button>
     </div>
   </div>
 

@@ -24,6 +24,7 @@ const defaults = () => ({
   seenRules: false,
   seenPlayground: false,
   seenZoomTip: false,
+  seenIntro: false,
 });
 
 export function load() {
