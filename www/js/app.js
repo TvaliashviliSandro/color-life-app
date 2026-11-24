@@ -171,6 +171,7 @@ const changedCells = (a, b) => {
   return out;
 };
 const BADGE = { ok: "check", wrong: "close", missed: "plus" };
+const MARK_ICON = { survive: "dot", die: "close", born: "plus" };
 
 function renderBoard(el, size, live, o = {}) {
   el.style.setProperty("--n", size);
@@ -188,7 +189,8 @@ function renderBoard(el, size, live, o = {}) {
       const r = o.results?.get(k) || (o.flags?.has(k) ? "wrong" : null);
       if (r === "missed") cls += " missed";
       if (r === "wrong") cls += " is-wrong";
-      let inner = r ? `<span class="badge ${r}">${icon(BADGE[r])}</span>` : "";
+      let inner = m ? `<span class="glyph">${icon(MARK_ICON[m])}</span>` : "";
+      if (r) inner += `<span class="badge ${r}">${icon(BADGE[r])}</span>`;
       if (o.locked?.has(k)) inner += `<span class="lock-dot">${icon("lock")}</span>`;
       if (o.counts) inner += `<span class="count${o.countStyle ? " " + o.countStyle : ""}">${neighbours(o.counts, x, y)}</span>`;
       html += `<div class="${cls}" data-k="${k}" style="--d:${(x + y) * 35}ms">${inner}</div>`;
@@ -852,6 +854,16 @@ function showAttempt(i) {
   };
 }
 $("endReplay").onclick = () => endSim.replay();
+
+// Replay speed: 0.5× / 1× / 2× / 3×, remembered between games.
+function setSimSpeed(m) {
+  S.simSpeed = m;
+  store.save(S);
+  endSim.speed(m);
+  $("simSpeed").querySelectorAll("button").forEach((b) => b.classList.toggle("on", +b.dataset.s === m));
+}
+$("simSpeed").querySelectorAll("button").forEach((b) => (b.onclick = () => setSimSpeed(+b.dataset.s)));
+setSimSpeed(S.simSpeed || 1);
 $("revPrev").onclick = () => showAttempt(Math.max(0, G.reviewIndex - 1));
 $("revNext").onclick = () => showAttempt(Math.min(G.attempts.length - 1, G.reviewIndex + 1));
 

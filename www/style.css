@@ -261,18 +261,9 @@ button.link.center { display: flex; margin: 16px auto 0; font-size: 14px; }
 .cell.m-survive { background: var(--survive); }
 .cell.m-die { background: var(--die); }
 .cell.m-born { background: var(--born); }
-.cell.m-survive::after, .cell.m-die::after, .cell.m-born::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(0, 0, 0, .45);
-  font-weight: 700;
-  font-size: calc(min(440px, 52vh, 100vw) / var(--n) * .36);
-}
-.cell.m-survive::after { content: "●"; font-size: calc(min(440px, 52vh, 100vw) / var(--n) * .24); }
-.cell.m-die::after { content: "✕"; }
-.cell.m-born::after { content: "+"; }
+/* Mark symbols are icons sized as a share of the cell, so they fit any board size */
+.glyph { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(0, 0, 0, .45); pointer-events: none; }
+.glyph .ic { width: 44%; height: 44%; stroke-width: 3; }
 .cell.need { animation: need .5s 2; }
 @keyframes need { 50% { box-shadow: 0 0 0 3px var(--accent); transform: scale(.9); } }
 .board.locked { pointer-events: none; }
@@ -810,7 +801,7 @@ button.small { padding: 7px 12px; font-size: 13px; }
 /* ---------- Light mode touches ---------- */
 [data-mode="light"] .modal { background: rgba(30, 34, 42, .35); }
 [data-mode="light"] .modal-card, [data-mode="light"] .toast { box-shadow: 0 16px 50px rgba(20, 24, 32, .18); }
-[data-mode="light"] .cell.m-survive::after, [data-mode="light"] .cell.m-die::after, [data-mode="light"] .cell.m-born::after { color: rgba(0, 0, 0, .4); }
+[data-mode="light"] .glyph { color: rgba(0, 0, 0, .4); }
 [data-mode="light"] .board, [data-mode="light"] .mode, [data-mode="light"] .diff, [data-mode="light"] .stats div,
 [data-mode="light"] .theme, [data-mode="light"] .appearance button, [data-mode="light"] .pack, [data-mode="light"] .shop-card,
 [data-mode="light"] .ability, [data-mode="light"] .hint, [data-mode="light"] .pill {
@@ -910,3 +901,8 @@ button.small { padding: 7px 12px; font-size: 13px; }
   .intro-board { width: 140px; }
 }
 .intro .lesson-step { align-self: center; }
+
+/* ---------- Replay speed ---------- */
+.speed { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--panel); }
+.speed button { flex: 1; padding: 6px 0; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); border-radius: 8px; font-variant-numeric: tabular-nums; }
+.speed button.on { background: var(--accent); color: var(--on-accent); }

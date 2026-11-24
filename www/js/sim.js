@@ -3,12 +3,13 @@
 import { parse, step } from "./life.js";
 
 const MAX_STEPS = 300;
-const STEP_MS = 150;
+// 1× = 400 ms per step: slow enough to follow each step; speed() changes it.
+const BASE_STEP_MS = 400;
 const signature = (cells) => [...cells].sort().join(";");
 
 export function createSim(canvas, caption) {
   const ctx = canvas.getContext("2d");
-  let raf = 0, run = null, last = null;
+  let raf = 0, run = null, last = null, stepMs = BASE_STEP_MS;
 
   function colors() {
     const css = getComputedStyle(document.documentElement);
@@ -46,7 +47,7 @@ export function createSim(canvas, caption) {
     const elapsed = t - r.t0;
 
     // Step the simulation (after a short pause on the solved board).
-    if (!r.done && elapsed > 700 && t - r.lastStep >= STEP_MS) {
+    if (!r.done && elapsed > 700 && t - r.lastStep >= stepMs) {
       r.lastStep = t;
       const next = step(r.live);
       r.born = new Set([...next].filter((k) => !r.live.has(k)));
@@ -128,5 +129,5 @@ export function createSim(canvas, caption) {
     }
   }
 
-  return { play, stop, replay: () => last && play(last.cells, last.size) };
+  return { play, stop, replay: () => last && play(last.cells, last.size), speed: (m) => { stepMs = BASE_STEP_MS / m; } };
 }

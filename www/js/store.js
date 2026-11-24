@@ -14,6 +14,7 @@ const defaults = () => ({
   playtestGrant: false,      // one-time pile of coins for the playtest build
   adCoins: { date: null, count: 0 },
   dailyBonus: null,          // date the shop's daily bonus was last claimed
+  simSpeed: 1,               // replay speed in the end popup
   abilityUses: {},           // ability id -> times used (playtest feedback)
   coins: 0, totalStars: 0,
   lives: MAX_LIVES, livesAt: Date.now(),
