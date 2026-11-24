@@ -14,7 +14,7 @@ will be **born**; anything left unmarked survives or stays empty. Each puzzle ta
   (🟩 right, 🟥 wrong, 🟨 missed birth) and keep a daily streak.
 - **⚡ Rush:** as many perfect answers as you can in 60 seconds.
 - **🧪 Playground:** the original Color Life sandbox. Draw on an endless board, press Start and watch it
-  evolve, with colour hints for what survives, dies and is born next.
+  evolve, with colour hints for what dies and what is born next.
 - **🎨 Themes:** System, Light and Dark are free (System follows the phone). Colour themes unlock with coins.
 
 ## Playtest build (current)
