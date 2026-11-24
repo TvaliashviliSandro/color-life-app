@@ -625,6 +625,14 @@ button.small { padding: 7px 12px; font-size: 13px; }
 .review-board .cell[class*="m-"]:not(.is-wrong) { opacity: .38; }
 .review-board .badge { min-width: 12px; min-height: 12px; }
 .board { width: min(100%, 440px, 46vh); }
+/* The game board sits in a viewport that can be pinch-zoomed */
+.board-viewport {
+  position: relative; flex: none;
+  width: min(100%, 440px, 46vh); aspect-ratio: 1;
+  overflow: hidden; border-radius: 18px; touch-action: none;
+}
+.board-viewport .board { width: 100%; transform-origin: 0 0; will-change: transform; }
+.board-viewport.zoomed .board { border-radius: 0; }
 
 /* ---------- Ability bar ---------- */
 .abilities { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding-top: 10px; }
@@ -737,6 +745,7 @@ button.small { padding: 7px 12px; font-size: 13px; }
 
 @media (max-height: 700px) {
   .board { width: min(100%, 440px, 42vh); }
+  .board-viewport { width: min(100%, 440px, 42vh); }
   .ability { padding: 5px 2px; }
   .ab-cost { display: none; }
 }
@@ -811,3 +820,35 @@ button.small { padding: 7px 12px; font-size: 13px; }
 [data-mode="light"] .mode.primary { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent); }
 .heart-on { color: var(--die); fill: var(--die); stroke: var(--die); }
 .toast .ic { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
+
+/* ---------- Board zoom ---------- */
+.zoom-reset {
+  position: absolute; right: 8px; bottom: 8px; z-index: 3;
+  width: 38px; height: 38px; padding: 0; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent); color: var(--text);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.zoom-reset .ic { width: 20px; height: 20px; }
+.zoom-tip {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  text-align: center; padding: 20px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: screen-in .25s ease-out;
+}
+.zoom-tip b { font-size: 17px; }
+.zoom-tip span { font-size: 13px; color: var(--muted); max-width: 240px; }
+.zoom-tip button { margin-top: 8px; }
+.pinch-demo { position: relative; width: 96px; height: 70px; margin-bottom: 4px; }
+.pinch-demo i {
+  position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px;
+  border-radius: 50%; background: var(--accent); opacity: .9;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: pinch-a 1.6s ease-in-out infinite;
+}
+.pinch-demo i + i { animation-name: pinch-b; }
+@keyframes pinch-a { 0%, 15% { transform: translate(-8px, 6px); } 60%, 80% { transform: translate(-36px, 22px); } 100% { transform: translate(-8px, 6px); } }
+@keyframes pinch-b { 0%, 15% { transform: translate(8px, -6px); } 60%, 80% { transform: translate(36px, -22px); } 100% { transform: translate(8px, -6px); } }
+.tap-demo.zoom-demo .ic { width: 20px; height: 20px; color: var(--accent); }

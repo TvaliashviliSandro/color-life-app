@@ -382,11 +382,104 @@ function startPuzzle(puzzle) {
   $("controls").hidden = false;
   $("targetBanner").hidden = true;
   $("board").classList.remove("locked");
+  resetZoom();
   renderSolve();
   renderAbilities();
   $("hint").innerHTML = hintFor();
   updateBar();
   if (G.mode === "tutorial") showLesson(G.step + 1);
+  maybeZoomTip();
+}
+
+// ---------- Board zoom: pinch / wheel to zoom, drag to move ----------
+const zoom = { scale: 1, tx: 0, ty: 0, pointers: new Map(), pinch: null, drag: null, suppressClick: false };
+const MAX_ZOOM = 2.5;
+
+function applyZoom() {
+  const vp = $("boardViewport"), w = vp.clientWidth, h = vp.clientHeight;
+  zoom.scale = Math.min(MAX_ZOOM, Math.max(1, zoom.scale));
+  // keep the board covering the viewport: no empty space at the edges
+  zoom.tx = Math.min(0, Math.max(w - w * zoom.scale, zoom.tx));
+  zoom.ty = Math.min(0, Math.max(h - h * zoom.scale, zoom.ty));
+  $("board").style.transform = zoom.scale === 1 ? "" : `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`;
+  $("zoomReset").hidden = zoom.scale < 1.05;
+  vp.classList.toggle("zoomed", zoom.scale > 1.05);
+}
+function resetZoom() {
+  Object.assign(zoom, { scale: 1, tx: 0, ty: 0, pinch: null, drag: null });
+  zoom.pointers.clear();
+  applyZoom();
+}
+// Zoom to `scale`, keeping the board point under (px, py) in place.
+function zoomAt(scale, px, py, from = zoom) {
+  const bx = (px - from.tx) / from.scale, by = (py - from.ty) / from.scale;
+  zoom.scale = Math.min(MAX_ZOOM, Math.max(1, scale));
+  zoom.tx = px - bx * zoom.scale;
+  zoom.ty = py - by * zoom.scale;
+  applyZoom();
+}
+
+(() => {
+  const vp = $("boardViewport");
+  const pos = (e) => { const r = vp.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  vp.addEventListener("pointerdown", (e) => {
+    zoom.pointers.set(e.pointerId, pos(e));
+    if (zoom.pointers.size === 1) { zoom.suppressClick = false; zoom.drag = { start: pos(e), tx: zoom.tx, ty: zoom.ty, moving: false }; }
+    if (zoom.pointers.size === 2) {
+      const [a, b] = [...zoom.pointers.values()];
+      zoom.pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, scale: zoom.scale, tx: zoom.tx, ty: zoom.ty };
+      zoom.drag = null;
+      zoom.suppressClick = true;
+      try { vp.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  });
+  vp.addEventListener("pointermove", (e) => {
+    if (!zoom.pointers.has(e.pointerId)) return;
+    const p = pos(e);
+    zoom.pointers.set(e.pointerId, p);
+    if (zoom.pinch && zoom.pointers.size >= 2) {
+      const [a, b] = [...zoom.pointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      zoomAt(zoom.pinch.scale * dist / zoom.pinch.dist, (a.x + b.x) / 2, (a.y + b.y) / 2, zoom.pinch);
+      hideZoomTip(true);
+    } else if (zoom.drag && zoom.scale > 1.05) {
+      const dx = p.x - zoom.drag.start.x, dy = p.y - zoom.drag.start.y;
+      if (!zoom.drag.moving && Math.hypot(dx, dy) > 8) {
+        zoom.drag.moving = true;
+        zoom.suppressClick = true;
+        try { vp.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      if (zoom.drag.moving) { zoom.tx = zoom.drag.tx + dx; zoom.ty = zoom.drag.ty + dy; applyZoom(); }
+    }
+  });
+  const end = (e) => {
+    zoom.pointers.delete(e.pointerId);
+    if (zoom.pointers.size < 2) zoom.pinch = null;
+    if (zoom.pointers.size === 0) zoom.drag = null;
+    if (zoom.scale < 1.05 && zoom.tx !== 0) resetZoom();
+  };
+  vp.addEventListener("pointerup", end);
+  vp.addEventListener("pointercancel", end);
+  vp.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const p = pos(e);
+    zoomAt(zoom.scale * Math.exp(-e.deltaY * 0.004), p.x, p.y);
+    hideZoomTip(true);
+  }, { passive: false });
+  $("zoomReset").addEventListener("click", (e) => { e.stopPropagation(); resetZoom(); });
+  $("zoomTipOk").addEventListener("click", (e) => { e.stopPropagation(); hideZoomTip(true); });
+  window.addEventListener("resize", () => applyZoom());
+})();
+
+// One-time hint the first time a big board (8×8 and up) appears.
+function maybeZoomTip() {
+  if (S.seenZoomTip || !G?.puzzle || G.puzzle.size < 8 || G.mode === "rush") return;
+  $("zoomTip").hidden = false;
+}
+function hideZoomTip(seen) {
+  if ($("zoomTip").hidden) return;
+  $("zoomTip").hidden = true;
+  if (seen) { S.seenZoomTip = true; store.save(S); }
 }
 
 function hintFor() {
@@ -432,6 +525,7 @@ function updateBar() {
 
 // ---------- Painting ----------
 $("board").addEventListener("click", (e) => {
+  if (zoom.suppressClick) { zoom.suppressClick = false; return; }
   const c = e.target.closest(".cell");
   if (!c || !G) return;
   const k = c.dataset.k;

@@ -86,7 +86,16 @@
 
     <div class="stage">
       <div class="hearts-row" id="heartsRow" hidden></div>
-      <div id="board" class="board"></div>
+      <div class="board-viewport" id="boardViewport">
+        <div id="board" class="board"></div>
+        <button class="zoom-reset" id="zoomReset" hidden aria-label="Show the whole board"><i data-icon="fit"></i></button>
+        <div class="zoom-tip" id="zoomTip" hidden>
+          <div class="pinch-demo"><i></i><i></i></div>
+          <b>Pinch to zoom</b>
+          <span>Drag with one finger to move around. Pinch out to see the whole board.</span>
+          <button class="primary small" id="zoomTipOk">Got it</button>
+        </div>
+      </div>
     </div>
 
     <div class="target-banner" id="targetBanner" hidden>
@@ -197,6 +206,7 @@
         <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="survive">●</i></span><span>Tap a white cell once: it <b>survives</b></span></li>
         <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="die">✕</i></span><span>Tap it twice: it <b>dies</b></span></li>
         <li><span class="tap-demo"><i></i><i data-icon="chevron" class="tiny"></i><i class="born">+</i></span><span>Tap an empty cell: it's <b>born</b></span></li>
+        <li><span class="tap-demo zoom-demo"><i data-icon="search"></i></span><span>Big board? <b>Pinch to zoom</b> in, drag to move, pinch out to see it all</span></li>
       </ul>
       <h3 class="modes-title">Abilities</h3>
       <ul class="modes" id="abilityHelp"></ul>

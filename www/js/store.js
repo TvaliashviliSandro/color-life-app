@@ -23,6 +23,7 @@ const defaults = () => ({
   themes: [], theme: "system",
   seenRules: false,
   seenPlayground: false,
+  seenZoomTip: false,
 });
 
 export function load() {
