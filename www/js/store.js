@@ -1,7 +1,7 @@
 // Player progress, saved on the device.
 // Bumping the key resets every player's progress on their next launch.
-const KEY = "colorlife.game.v2";
-const OLD_KEYS = ["colorlife.game.v1"];
+const KEY = "colorlife.game.v3";
+const OLD_KEYS = ["colorlife.game.v1", "colorlife.game.v2"];
 export const MAX_LIVES = 5;
 export const LIFE_REGEN_MS = 15 * 60 * 1000;
 const LAUNCH = "2026-11-22";      // Daily #1
