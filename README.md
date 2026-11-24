@@ -1,7 +1,8 @@
 # Color Life
 
 A puzzle game built on Conway's Game of Life: you see a small board, predict what every cell does in the
-next step, then watch it happen. Each puzzle takes 10–30 seconds.
+next step, then watch it happen. You only mark the changes: tap live cells that will **die** and empty cells that
+will be **born**; anything left unmarked survives or stays empty. Each puzzle takes 10–30 seconds.
 
 - **▶ Play:** pick a difficulty from Very easy (3–4 blocks in the middle of a 5×5 board) to Extreme
   (18–26 blocks across a 10×10 board). Every puzzle is new. Too many mistakes cost a heart (5 hearts, one refills

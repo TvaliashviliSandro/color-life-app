@@ -906,3 +906,7 @@ button.small { padding: 7px 12px; font-size: 13px; }
 .speed { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: var(--panel); }
 .speed button { flex: 1; padding: 6px 0; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); border-radius: 8px; font-variant-numeric: tabular-nums; }
 .speed button.on { background: var(--accent); color: var(--on-accent); }
+
+.sw.live { background: var(--live); }
+.tap-demo .on + .ic + .on { box-shadow: 0 0 0 1.5px var(--accent); }
+.mini.big i.stay { box-shadow: 0 0 0 2px var(--accent); }

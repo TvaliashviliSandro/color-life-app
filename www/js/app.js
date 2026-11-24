@@ -161,7 +161,7 @@ function refreshHome() {
 // ---------- Board rendering ----------
 const outcomeMap = (p) => {
   const m = new Map();
-  for (const t of ["survive", "die", "born"]) for (const k of p.answer[t]) m.set(k, t);
+  for (const t of ["die", "born"]) for (const k of p.answer[t]) m.set(k, t);   // survivors stay unmarked
   return m;
 };
 const changedCells = (a, b) => {
@@ -171,7 +171,7 @@ const changedCells = (a, b) => {
   return out;
 };
 const BADGE = { ok: "check", wrong: "close", missed: "plus" };
-const MARK_ICON = { survive: "dot", die: "close", born: "plus" };
+const MARK_ICON = { die: "close", born: "plus" };
 
 function renderBoard(el, size, live, o = {}) {
   el.style.setProperty("--n", size);
@@ -245,39 +245,39 @@ function syncMini() {
 // ---------- Tutorial lessons (popup before each of the 5 tutorial puzzles) ----------
 // Example grids are 3×3, middle cell = index 4. "on" = live, "" = empty.
 const TAP = {
-  survive: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="survive">●</span></span><span>Tap a live cell <b>once</b>: it survives</span>`,
+  keep: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="on"></span></span><span><b>Leave</b> a live cell alone: it survives</span>`,
   die: `<span class="tap-demo"><span class="on"></span>${icon("chevron", "tiny")}<span class="die">✕</span></span><span>Tap a live cell <b>twice</b>: it dies</span>`,
   born: `<span class="tap-demo"><span></span>${icon("chevron", "tiny")}<span class="born">+</span></span><span>Tap an <b>empty</b> cell: it's born</span>`,
 };
 const LESSONS = [
   { title: "Survive",
-    before: ["", "on", "", "", "on", "on", "", "", ""], result: "survive",
-    body: "Your job: predict what every cell does in the <b>next step</b>.<br>Each cell counts its <b>8 neighbours</b> (diagonals too). A live cell with <b>2 or 3</b> live neighbours <b>survives</b>.",
-    how: ["survive"] },
+    before: ["", "on", "", "", "on", "on", "", "", ""], result: "on stay",
+    body: "Your job: predict what every cell does in the <b>next step</b>.<br>Each cell counts its <b>8 neighbours</b> (diagonals too). A live cell with <b>2 or 3</b> live neighbours <b>survives</b>. You only mark changes, so <b>leave survivors alone</b>. Here every cell survives: just press Check.",
+    how: ["keep"] },
   { title: "Lonely cells die",
     before: ["on", "", "", "", "on", "", "", "", ""], result: "die",
     body: "A live cell with <b>0 or 1</b> live neighbours <b>dies</b> of loneliness.",
-    how: ["survive", "die"] },
+    how: ["keep", "die"] },
   { title: "Birth",
     before: ["on", "", "on", "", "", "", "", "on", ""], result: "born",
     body: "An <b>empty</b> cell with <b>exactly 3</b> live neighbours is <b>born</b>.",
-    how: ["survive", "born"] },
+    how: ["keep", "born"] },
   { title: "Crowded cells die",
     before: ["on", "", "on", "", "on", "", "on", "", "on"], result: "die",
     body: "A live cell with <b>4 or more</b> live neighbours <b>dies</b> from overcrowding.",
-    how: ["survive", "die", "born"] },
+    how: ["keep", "die", "born"] },
   { title: "Put it all together",
     rules: true,
     body: "Use every rule at once. Check each live cell, then look for empty cells with exactly 3 neighbours. A wrong Check flags your mistakes so you can fix them.",
-    how: ["survive", "die", "born"] },
+    how: ["keep", "die", "born"] },
 ];
-const GLYPH = { survive: "●", die: "✕", born: "+" };
+const GLYPH = { die: "✕", born: "+" };
 
 function lessonExample(L) {
   if (L.rules) {
     return `<ul class="lesson-rules">
       <li><i class="sw die"></i><span><b>0–1</b> neighbours: dies</span></li>
-      <li><i class="sw survive"></i><span><b>2–3</b> neighbours: survives</span></li>
+      <li><i class="sw live"></i><span><b>2–3</b> neighbours: survives (leave it)</span></li>
       <li><i class="sw die"></i><span><b>4+</b> neighbours: dies</span></li>
       <li><i class="sw born"></i><span>empty + <b>exactly 3</b>: born</span></li></ul>`;
   }
@@ -529,7 +529,7 @@ function hintFor() {
   if (G.mode === "endless" && G.endless.steps === 0)
     return "Your answer becomes the next board. The edge is a wall: nothing exists outside it.";
   if (G.mode === "daily" || (G.mode === "play" && (S.diffStats[G.diff]?.solved || 0) < 2))
-    return 'Mark every live cell <i class="sw survive"></i> or <i class="sw die"></i>, and the empty cells that will be born <i class="sw born"></i>. Each wrong Check costs a heart.';
+    return 'Tap the live cells that will <b>die</b> <i class="sw die"></i> and the empty cells that will be <b>born</b> <i class="sw born"></i>. Leave everything else. Each wrong Check costs a heart.';
   return "";
 }
 
@@ -576,10 +576,8 @@ $("board").addEventListener("click", (e) => {
   if (G.phase !== "solve") return;
   if (G.locked.has(k)) { toast("Revealed by an ability"); return; }
   const cur = G.marks.get(k);
-  // Live cell: survive → die → unmarked.  Empty cell: born → unmarked.
-  const next = G.start.has(k)
-    ? (cur === undefined ? "survive" : cur === "survive" ? "die" : undefined)
-    : (cur ? undefined : "born");
+  // Live cell: dies ↔ unmarked.  Empty cell: born ↔ unmarked.  Unmarked = no change.
+  const next = cur ? undefined : G.start.has(k) ? "die" : "born";
   next ? G.marks.set(k, next) : G.marks.delete(k);
   G.flags.delete(k);
   buzz(5);
@@ -599,12 +597,6 @@ $("checkBtn").onclick = check;
 async function check() {
   if (!G || G.phase !== "solve") return;
   const p = G.puzzle;
-  const unmarked = [...G.start].filter((k) => !G.marks.has(k));
-  if (unmarked.length) {
-    for (const k of unmarked) $("board").querySelector(`[data-k="${k}"]`)?.classList.add("need");
-    toast(`Mark every live cell first (${unmarked.length} left)`);
-    return;
-  }
   const res = grade(p, G.marks);
   if (G.mode === "rush") return rushChecked(res);
   if (res.mistakes === 0) return solved();
@@ -618,7 +610,7 @@ async function check() {
   });
   G.flags = new Set(wrong);
   buzz([30, 40, 30]);
-  const msg = [wrong.length ? `${plural(wrong.length, "wrong cell")} flagged` : "", missed.length ? `${plural(missed.length, "birth")} missed somewhere` : ""].filter(Boolean).join(" · ");
+  const msg = [wrong.length ? `${plural(wrong.length, "wrong cell")} flagged` : "", missed.length ? `${plural(missed.length, "change")} missed somewhere` : ""].filter(Boolean).join(" · ");
   if (G.mode === "tutorial") {
     toast(`${msg}. Fix them and check again.`, 2600);
   } else if (G.shield) {
@@ -819,7 +811,7 @@ function toggleReview(on, quiet = false) {
   else if (G.preview && !quiet) endSim.play(new Set(G.puzzle.frames[1]), G.puzzle.size);
 }
 
-const MARK_WORD = { survive: "survives", die: "dies", born: "born" };
+const MARK_WORD = { die: "dies", born: "born" };
 // Why a cell does what it does, in plain words.
 function explain(k, start, marked) {
   const [x, y] = parse(k);
@@ -828,7 +820,7 @@ function explain(k, start, marked) {
   let why;
   if (alive) why = n < 2 ? `${nb}: too lonely, so it dies` : n <= 3 ? `${nb}, so it survives` : `${nb}: too crowded, so it dies`;
   else why = n === 3 ? "exactly 3 live neighbours, so it's born" : `${nb}; it needs exactly 3 to be born, so it stays empty`;
-  const yours = marked ? `you marked it <b>${MARK_WORD[marked]}</b>` : alive ? "you left it unmarked" : "you left it empty";
+  const yours = marked ? `you marked it <b>${MARK_WORD[marked]}</b>` : alive ? "you left it alive" : "you left it empty";
   return `<b>Row ${y + 1}, column ${x + 1}</b>: ${yours}. It has ${why}.`;
 }
 
@@ -1267,7 +1259,7 @@ $("playgroundBtn").onclick = () => {
       how: [
         ["pencil", "<b>Tap</b> squares to draw or erase cells, then press <b>Start</b> to watch them evolve."],
         ["steps", "Use <b>Next</b> and <b>Undo</b> to go one step at a time: guess first, then check."],
-        ["eye", 'Turn on <b>Colour hints</b> to see what survives <i class="sw survive"></i>, dies <i class="sw die"></i> and is born <i class="sw born"></i> next.'],
+        ["eye", 'Turn on <b>Colour hints</b> to see what dies <i class="sw die"></i> and what is born <i class="sw born"></i> next.'],
         ["orbit", "Watch the starter patterns: the <b>glider</b> walks across the board, the <b>blinker</b> flips forever."],
         ["dice", "<b>Random</b> fills the screen. See what's left standing after a few hundred steps."],
       ].map(([ic, text]) => `<p><span class="how-icon">${icon(ic)}</span><span>${text}</span></p>`).join(""),
@@ -1306,7 +1298,7 @@ const INTRO = [
   { title: "Four simple rules", demo: "rules",
     body: "A cell only looks at its <b>8 neighbours</b>: the squares touching it, diagonals too." },
   { title: "Your job: predict the next step", demo: "predict",
-    body: 'Before the step happens, mark what each cell will do: <i class="sw survive"></i> <b>survives</b>, <i class="sw die"></i> <b>dies</b>, <i class="sw born"></i> <b>is born</b>. Then press <b>Check</b> and watch it happen.' },
+    body: 'Before the step happens, tap the cells that change: <i class="sw die"></i> <b>dies</b>, <i class="sw born"></i> <b>is born</b>. Leave the rest as they are. Then press <b>Check</b> and watch it happen.' },
   { title: "Why play?", demo: "why",
     body: "It's a puzzle about reading patterns. Every board is new, you get quicker at seeing what comes next, and after each puzzle you watch where your pattern goes." },
 ];
@@ -1344,7 +1336,7 @@ function playIntroDemo(kind) {
   if (kind === "rules") {
     box.innerHTML = `<div class="intro-rules">
       ${[["", "on", "", "", "on", "", "", "", ""], ["on", "", "", "", "on", "on", "", "", ""], ["on", "on", "on", "", "on", "", "on", "", "on"], ["on", "", "on", "", "", "", "", "on", ""]].map((g, i) => {
-        const res = ["die", "survive", "die", "born"][i];
+        const res = ["die", "on", "die", "born"][i];
         const label = ["0–1 neighbours: dies", "2–3 neighbours: survives", "4+ neighbours: dies", "exactly 3: born"][i];
         return `<div><div class="mini">${g.map((c, j) => `<i class="${j === 4 ? res : c}"></i>`).join("")}</div><small>${label}</small></div>`;
       }).join("")}</div>`;
@@ -1379,13 +1371,13 @@ function playIntroDemo(kind) {
   if (kind === "predict") {
     // A blinker: mark it cell by cell, press Check, see the step, repeat.
     const n = 5, start = new Set(["2,1", "2,2", "2,3"]), next = new Set(["1,2", "2,2", "3,2"]);
-    const outcome = new Map([["2,1", "die"], ["2,3", "die"], ["2,2", "survive"], ["1,2", "born"], ["3,2", "born"]]);
-    const order = [["2,1", "die"], ["2,3", "die"], ["2,2", "survive"], ["1,2", "born"], ["3,2", "born"]];
-    const captions = ["This is the board now.", "Lonely: 1 neighbour, so it dies.", "Also 1 neighbour: dies.", "2 neighbours: survives.", "Empty with exactly 3 neighbours: born.", "Same here: born.", "Press Check…", "…and the step happens. Every guess was right!"];
+    const outcome = new Map([["2,1", "die"], ["2,3", "die"], ["1,2", "born"], ["3,2", "born"]]);
+    const order = [["2,1", "die"], ["2,3", "die"], null, ["1,2", "born"], ["3,2", "born"]];   // null: the middle survives, leave it
+    const captions = ["This is the board now.", "Lonely: 1 neighbour, so it dies.", "Also 1 neighbour: dies.", "The middle has 2 neighbours: it survives, so leave it.", "Empty with exactly 3 neighbours: born.", "Same here: born.", "Press Check…", "…and the step happens. Every guess was right!"];
     // frames 0–5: marking one cell at a time · 6: press Check · 7: the step happens
     let t = 0;
     const draw = () => {
-      if (t <= 6) renderBoard(board, n, start, { marks: new Map(order.slice(0, Math.min(t, 5))) });
+      if (t <= 6) renderBoard(board, n, start, { marks: new Map(order.slice(0, Math.min(t, 5)).filter(Boolean)) });
       else renderBoard(board, n, next, { outcome, results: new Map([...outcome.keys()].map((k) => [k, "ok"])), flip: new Set(outcome.keys()) });
       board.classList.toggle("checking", t === 6);
       $("introCaption").textContent = captions[t];
