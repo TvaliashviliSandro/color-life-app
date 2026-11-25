@@ -161,7 +161,7 @@ function render() {
   const f = hints ? getForecast() : null;
   for (const k of live) {
     const [x, y] = parse(k);
-    if (visible(x, y)) fillCell(x, y, hints && f.die.has(k) ? colors.die : colors.plain);   // survivors stay plain
+    if (visible(x, y)) fillCell(x, y, hints ? (f.die.has(k) ? colors.die : colors.survive) : colors.plain);
   }
   if (hints) {
     ctx.globalAlpha = 0.85;

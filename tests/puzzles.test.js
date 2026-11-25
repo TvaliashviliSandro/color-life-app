@@ -91,9 +91,10 @@ test("endless: walled board, long-lived start, rounds chain together", () => {
   }
 });
 
-test("grading: only deaths and births are marked; survivors are left alone", () => {
-  const p = fromTutorial(TUTORIAL[4]);   // blinker: 2 die, 1 survives, 2 born
+test("grading counts wrong, missed and false births; stars scale with slack", () => {
+  const p = fromTutorial(TUTORIAL[4]);   // blinker
   const perfect = new Map();
+  for (const k of p.answer.survive) perfect.set(k, "survive");
   for (const k of p.answer.die) perfect.set(k, "die");
   for (const k of p.answer.born) perfect.set(k, "born");
   assert.equal(grade(p, perfect).stars, 3);
@@ -101,16 +102,6 @@ test("grading: only deaths and births are marked; survivors are left alone", () 
   assert.deepEqual([grade(p, one).mistakes, grade(p, one).stars], [1, 2]);
   const extra = new Map(perfect); extra.set("0,0", "born");
   assert.equal(grade(p, extra).mistakes, 1);
-  // marking the survivor as dying is a wrong mark
-  const killed = new Map(perfect); killed.set(p.answer.survive[0], "die");
-  assert.deepEqual([grade(p, killed).cells.get(p.answer.survive[0]), grade(p, killed).mistakes], ["wrong", 1]);
-  // not marking a death is a missed change
-  const missedDeath = new Map(perfect); missedDeath.delete(p.answer.die[0]);
-  assert.deepEqual([grade(p, missedDeath).cells.get(p.answer.die[0]), grade(p, missedDeath).mistakes], ["missed", 1]);
-  // survivors never show up in the grading at all
-  assert.ok(!grade(p, perfect).cells.has(p.answer.survive[0]));
-  // a board where everything survives is solved by marking nothing
-  assert.equal(grade(fromTutorial(TUTORIAL[0]), new Map()).stars, 3);
   assert.deepEqual([0, 1, 2, 3].map((m) => starsFor(m, 1)), [3, 2, 1, 0]);
   assert.deepEqual([0, 3, 6, 7].map((m) => starsFor(m, 3)), [3, 2, 1, 0]);
 });

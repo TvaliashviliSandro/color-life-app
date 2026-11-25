@@ -26,8 +26,8 @@
     <div class="logo">
       <div class="logo-grid" aria-hidden="true">
         <i></i><i class="born"></i><i></i>
-        <i></i><i></i><i class="live"></i>
-        <i class="die"></i><i class="live"></i><i class="live"></i>
+        <i></i><i></i><i class="survive"></i>
+        <i class="die"></i><i class="survive"></i><i class="live"></i>
       </div>
       <h1>Color Life</h1>
       <p>Predict the next step</p>
@@ -175,7 +175,7 @@
       </div>
       <div class="pg-row">
         <label class="switch"><input id="pgHints" type="checkbox" /><span class="track"></span>Colour hints</label>
-        <span class="pg-legend"><i class="sw die"></i>dies <i class="sw born"></i>born</span>
+        <span class="pg-legend"><i class="sw survive"></i>stays <i class="sw die"></i>dies <i class="sw born"></i>born</span>
       </div>
       <p class="pg-help">Tap to add or remove a cell · drag to move · pinch to zoom</p>
     </div>
@@ -200,8 +200,8 @@
       <div class="rules-list">
         <article class="rule" style="--c: var(--die)"><div class="mini"><i></i><i class="on"></i><i></i><i></i><i class="die"></i><i></i><i></i><i></i><i></i></div>
           <div><h3>Lonely: dies</h3><p>A live cell with <b>0 or 1</b> live neighbours dies.</p></div></article>
-        <article class="rule" style="--c: var(--text)"><div class="mini"><i class="on"></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
-          <div><h3>2 or 3: survives</h3><p>A live cell with <b>2 or 3</b> live neighbours stays alive. Leave it unmarked.</p></div></article>
+        <article class="rule" style="--c: var(--survive)"><div class="mini"><i class="on"></i><i></i><i></i><i></i><i class="survive"></i><i class="on"></i><i></i><i></i><i></i></div>
+          <div><h3>2 or 3: survives</h3><p>A live cell with <b>2 or 3</b> live neighbours stays alive.</p></div></article>
         <article class="rule" style="--c: var(--die)"><div class="mini"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="die"></i><i></i><i class="on"></i><i></i><i class="on"></i></div>
           <div><h3>Crowded: dies</h3><p>A live cell with <b>4 or more</b> live neighbours dies.</p></div></article>
         <article class="rule" style="--c: var(--born)"><div class="mini"><i class="on"></i><i></i><i class="on"></i><i></i><i class="born"></i><i></i><i></i><i class="on"></i><i></i></div>
@@ -209,9 +209,9 @@
       </div>
       <h3 class="modes-title">How to answer</h3>
       <ul class="taps">
-        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="die">✕</i></span><span>Tap a live cell: it <b>dies</b> (tap again to undo)</span></li>
+        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="survive">●</i></span><span>Tap a live cell once: it <b>survives</b></span></li>
+        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="die">✕</i></span><span>Tap it twice: it <b>dies</b></span></li>
         <li><span class="tap-demo"><i></i><i data-icon="chevron" class="tiny"></i><i class="born">+</i></span><span>Tap an empty cell: it's <b>born</b></span></li>
-        <li><span class="tap-demo"><i class="on"></i><i data-icon="chevron" class="tiny"></i><i class="on"></i></span><span><b>Leave</b> everything else: it survives or stays empty</span></li>
         <li><span class="tap-demo zoom-demo"><i data-icon="search"></i></span><span>Big board? <b>Pinch to zoom</b> in, drag to move, pinch out to see it all</span></li>
       </ul>
       <h3 class="modes-title">Abilities</h3>
@@ -223,7 +223,7 @@
         <li><span class="mode-dot" style="--tint: var(--born)"><i data-icon="calendar"></i></span><span><b>Daily</b> Everyone gets the same puzzle today. Share your result and keep your streak.</span></li>
         <li><span class="mode-dot" style="--tint: var(--die)"><i data-icon="bolt"></i></span><span><b>Rush</b> Solve as many as you can in 60 seconds. Only perfect answers count, and abilities are off.</span></li>
         <li><span class="mode-dot" style="--tint: var(--accent2)"><i data-icon="flask"></i></span><span><b>Playground</b> Free play, no scores. Draw any pattern on an endless board and press Start to watch the rules play out.
-          Use Next and Undo to go one step at a time, and turn on Colour hints to see what dies and what is born next.
+          Use Next and Undo to go one step at a time, and turn on Colour hints to see what survives, dies and is born next.
           A good place to practise, test a guess, or just watch famous patterns like the glider walk across the board.</span></li>
       </ul>
       <button class="soft wide intro-again" id="introAgain"><i data-icon="sparkle"></i>What is this game?</button>

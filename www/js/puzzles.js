@@ -156,11 +156,11 @@ export function endlessRound(cells, size = ENDLESS_SIZE) {
 }
 
 // ---------- Scoring ----------
-// marks: Map<"x,y", "die" | "born">. Only changes are marked: an unmarked live
-// cell is a guess that it survives, an unmarked empty cell that it stays empty.
+// marks: Map<"x,y", "survive" | "die" | "born">
 export function grade(puzzle, marks) {
   const ans = puzzle.answer;
   const truth = new Map();
+  for (const k of ans.survive) truth.set(k, "survive");
   for (const k of ans.die) truth.set(k, "die");
   for (const k of ans.born) truth.set(k, "born");
   const cells = new Map();          // "x,y" -> "ok" | "wrong" | "missed"
@@ -168,7 +168,7 @@ export function grade(puzzle, marks) {
     const m = marks.get(k);
     cells.set(k, m === t ? "ok" : m ? "wrong" : "missed");
   }
-  for (const [k, m] of marks) if (!truth.has(k)) cells.set(k, "wrong");   // marked a survivor, or a birth that doesn't happen
+  for (const [k, m] of marks) if (!truth.has(k)) cells.set(k, "wrong");   // false birth
   let mistakes = 0;
   for (const v of cells.values()) if (v !== "ok") mistakes++;
   return { cells, mistakes, stars: starsFor(mistakes, puzzle.slack || 1) };
