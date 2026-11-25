@@ -103,5 +103,18 @@ test("grading counts wrong, missed and false births; stars scale with slack", ()
   const extra = new Map(perfect); extra.set("0,0", "born");
   assert.equal(grade(p, extra).mistakes, 1);
   assert.deepEqual([0, 1, 2, 3].map((m) => starsFor(m, 1)), [3, 2, 1, 0]);
+
+  // Live cells survive by default: leaving a survivor unmarked is right, green is right too.
+  const s = p.answer.survive[0];
+  const noGreen = new Map(perfect); noGreen.delete(s);
+  assert.deepEqual([grade(p, noGreen).mistakes, grade(p, noGreen).cells.has(s)], [0, false]);
+  // Red on a survivor is wrong; an unmarked death is a missed change.
+  const killed = new Map(perfect); killed.set(s, "die");
+  assert.deepEqual([grade(p, killed).cells.get(s), grade(p, killed).mistakes], ["wrong", 1]);
+  const d = p.answer.die[0];
+  const missedDeath = new Map(perfect); missedDeath.delete(d);
+  assert.deepEqual([grade(p, missedDeath).cells.get(d), grade(p, missedDeath).mistakes], ["missed", 1]);
+  // An all-survive board is solved without marking anything.
+  assert.equal(grade(fromTutorial(TUTORIAL[0]), new Map()).stars, 3);
   assert.deepEqual([0, 3, 6, 7].map((m) => starsFor(m, 3)), [3, 2, 1, 0]);
 });

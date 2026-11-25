@@ -166,6 +166,9 @@ export function grade(puzzle, marks) {
   const cells = new Map();          // "x,y" -> "ok" | "wrong" | "missed"
   for (const [k, t] of truth) {
     const m = marks.get(k);
+    // Live cells count as surviving unless marked: an unmarked survivor is right
+    // (no badge needed); green on a survivor is right too.
+    if (t === "survive" && !m) continue;
     cells.set(k, m === t ? "ok" : m ? "wrong" : "missed");
   }
   for (const [k, m] of marks) if (!truth.has(k)) cells.set(k, "wrong");   // false birth
