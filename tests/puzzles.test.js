@@ -118,3 +118,29 @@ test("grading counts wrong, missed and false births; stars scale with slack", ()
   assert.equal(grade(fromTutorial(TUTORIAL[0]), new Map()).stars, 3);
   assert.deepEqual([0, 3, 6, 7].map((m) => starsFor(m, 3)), [3, 2, 1, 0]);
 });
+
+test("shared puzzle links: round trip, sender's stars, and junk is rejected", async () => {
+  const { encodePuzzle, decodePuzzle, findPuzzleCode } = await import("../www/js/puzzles.js");
+  for (const d of DIFFICULTIES) {
+    for (let i = 0; i < 20; i++) {
+      const p = makePuzzle(`share-${d.id}-${i}`, d);
+      const code = encodePuzzle(p, d.id, i % 4);
+      const back = decodePuzzle(code);
+      assert.ok(back, `${d.id}: decodes`);
+      assert.equal(back.diffId, d.id);
+      assert.equal(back.stars, i % 4);
+      assert.deepEqual(new Set(back.puzzle.frames[0]), new Set(p.frames[0]), "same board");
+      assert.deepEqual(new Set(back.puzzle.answer.born), new Set(p.answer.born), "same answer");
+      assert.ok(/^[A-Za-z0-9._-]+$/.test(code), "URL-safe");
+    }
+  }
+  const p = makePuzzle("x", DIFFICULTIES[3]);
+  const code = encodePuzzle(p, "hard");
+  assert.equal(decodePuzzle(code).stars, null, "stars are optional");
+  assert.equal(findPuzzleCode(`https://example.com/app/#puzzle=${code}`), code);
+  assert.equal(findPuzzleCode(`Can you solve this? https://x.y/#puzzle=${code}.3`), code + ".3");
+  for (const junk of ["", "hello", "v2.1.5.AAAA", "v1.99.5.AAAA", "v1.0.5.@@@@", "v1.0.5.AA"]) assert.equal(decodePuzzle(junk), null, junk);
+  // a board whose births would land outside the edge is refused
+  const edge = encodePuzzle({ size: 5, frames: [["0,0", "1,0", "2,0"]] }, "very-easy");
+  assert.equal(decodePuzzle(edge), null);
+});

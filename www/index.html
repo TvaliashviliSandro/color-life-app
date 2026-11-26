@@ -59,10 +59,11 @@
         <span class="mode-text"><b>Playground</b><small>Draw cells and watch them evolve</small></span>
         <i data-icon="chevron" class="chev"></i>
       </button>
-      <div class="pair trio">
-        <button class="soft" data-shop><i data-icon="bag"></i>Shop</button>
-        <button class="soft" id="themesBtn"><i data-icon="palette"></i>Themes</button>
-        <button class="soft" id="rulesBtn"><i data-icon="help"></i>Rules</button>
+      <div class="quad">
+        <button class="soft" id="leadersBtn"><i data-icon="trophy"></i><span>Ranks</span></button>
+        <button class="soft" data-shop><i data-icon="bag"></i><span>Shop</span></button>
+        <button class="soft" id="themesBtn"><i data-icon="palette"></i><span>Themes</span></button>
+        <button class="soft" id="rulesBtn"><i data-icon="help"></i><span>Rules</span></button>
       </div>
     </nav>
 
@@ -128,7 +129,22 @@
       <button class="pill coins" data-shop id="diffCoins"></button>
     </header>
     <div id="diffList" class="diff-list"></div>
+    <button id="openLinkBtn" class="soft wide open-link"><i data-icon="link"></i>Open a puzzle link from a friend</button>
     <button id="tutorialBtn" class="link center"><i data-icon="book"></i>Replay the tutorial</button>
+  </section>
+
+  <!-- ============ Leaderboard (placeholder players until online leaderboards go live) ============ -->
+  <section id="leaders" class="screen" hidden>
+    <header class="bar">
+      <button class="icon-btn" data-back aria-label="Back"><i data-icon="back"></i></button>
+      <div class="bar-title"><b>Leaderboard</b><span id="leadersSub">Stars earned</span></div>
+      <span></span>
+    </header>
+    <div class="chips" id="leaderTabs"></div>
+    <p class="muted section-note leader-note" id="leaderNote"></p>
+    <ol class="leader-list" id="leaderList"></ol>
+    <div class="leader-me" id="leaderMe" hidden></div>
+    <p class="playtest-note"><i data-icon="sparkle"></i>Playtest: the other players are placeholders. Real rankings go live with online accounts in the store version.</p>
   </section>
 
   <!-- ============ Shop (mock purchases for the playtest) ============ -->
@@ -307,6 +323,7 @@
 
       <div class="end-coins" id="endCoins"></div>
       <button class="soft wide" id="endMistakes"><i data-icon="flag"></i><span id="endMistakesLabel">Check mistakes</span></button>
+      <button class="soft wide challenge" id="endChallenge" hidden><i data-icon="share"></i>Challenge a friend with this puzzle</button>
       <div class="pair" id="endButtons"></div>
     </div>
   </div>

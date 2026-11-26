@@ -14,6 +14,12 @@ next step, then watch it happen. Each puzzle takes 10–30 seconds.
 - **⚡ Rush:** as many perfect answers as you can in 60 seconds.
 - **🧪 Playground:** the original Color Life sandbox. Draw on an endless board, press Start and watch it
   evolve, with colour hints for what survives, dies and is born next.
+- **Challenge a friend:** after a Play puzzle, share a link to that exact board. The puzzle travels inside the
+  link (`#puzzle=v1.<difficulty>.<size>.<cells>[.<stars>]`), so no server is needed; your friend solves it and
+  sees how you did. Links can also be pasted in the app (Play → "Open a puzzle link from a friend").
+- **Leaderboard:** a tab per difficulty (stars on that difficulty) plus Overall, where stars are weighted by
+  difficulty (×1 up to ×12) so farming Very easy doesn't win. Other players are placeholders until online
+  leaderboards (e.g. Google Play Games) are connected.
 - **🎨 Themes:** System, Light and Dark are free (System follows the phone). Colour themes unlock with coins.
 
 ## Playtest build (current)

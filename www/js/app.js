@@ -3,7 +3,7 @@
 // and every player gets a big pile of coins to try abilities and continues.
 import {
   DIFFICULTIES, difficulty, TUTORIAL, fromTutorial, makePuzzle, puzzleShape, dailyPuzzle, rushConfig, grade,
-  endlessStart, endlessRound, ENDLESS_SIZE,
+  endlessStart, endlessRound, ENDLESS_SIZE, encodePuzzle, decodePuzzle, findPuzzleCode,
 } from "./puzzles.js";
 import { key, parse, neighbours, step } from "./life.js";
 import * as store from "./store.js";
@@ -63,7 +63,7 @@ function earn(n) {
 }
 
 // ---------- Navigation (also makes Android's back button work) ----------
-const SCREENS = ["home", "game", "themes", "playground", "difficulty", "shop"];
+const SCREENS = ["home", "game", "themes", "playground", "difficulty", "shop", "leaders"];
 const MODALS = ["rules", "lesson", "continueModal", "endModal", "buyModal", "intro"];
 // Page changes: a transparent layer blocks extra taps for a moment, and a spinner
 // appears if the change takes longer than a blink (e.g. rewinding history on Android).
@@ -124,7 +124,7 @@ window.addEventListener("popstate", (e) => {
     return;
   }
   leaveScreen();
-  show(["home", "difficulty", "themes", "shop"].includes(target) ? target : "home");
+  show(["home", "difficulty", "themes", "shop", "leaders"].includes(target) ? target : "home");
 });
 document.querySelectorAll("[data-back]").forEach((b) => (b.onclick = back));
 document.querySelectorAll("[data-shop]").forEach((b) => (b.onclick = openShop));
@@ -140,6 +140,7 @@ function refresh() {
   if (current === "home") refreshHome();
   if (current === "themes") renderThemes();
   if (current === "difficulty") renderDifficulties();
+  if (current === "leaders") renderLeaders();
   if (current === "shop") renderShop();
   if (current === "game" && G?.puzzle) updateBar();
 }
@@ -319,7 +320,7 @@ const ABILITIES = [
   { id: "shield", name: "Shield", icon: "shield", cost: 30, desc: "Your next wrong Check doesn't cost a heart." },
 ];
 const abilityById = (id) => ABILITIES.find((a) => a.id === id);
-const abilitiesOn = () => G && ["play", "daily", "endless"].includes(G.mode);
+const abilitiesOn = () => G && ["play", "shared", "daily", "endless"].includes(G.mode);
 
 $("abilityHelp").innerHTML = ABILITIES.map((a) =>
   `<li><span class="mode-dot">${icon(a.icon)}</span><span><b>${a.name}</b> ${a.desc} <span class="cost">${coinsHTML(a.cost)}</span></span></li>`).join("")
@@ -528,6 +529,7 @@ function hintFor() {
     return "The small number on each cell is how many live neighbours it has.";
   if (G.mode === "endless" && G.endless.steps === 0)
     return "Your answer becomes the next board. The edge is a wall: nothing exists outside it.";
+  if (G.mode === "shared") return "A friend sent you this puzzle. Solve it, then watch where it goes!";
   if (G.mode === "daily" || (G.mode === "play" && (S.diffStats[G.diff]?.solved || 0) < 2))
     return 'Live cells survive unless you tap them: once for <i class="sw die"></i> dies, twice for <i class="sw survive"></i> survives (optional). Tap empty cells that will be born <i class="sw born"></i>. Each wrong Check costs a heart.';
   return "";
@@ -536,7 +538,7 @@ function hintFor() {
 function updateBar() {
   const p = G.puzzle;
   // Hearts sit right above the board; the top bar keeps the title and a short status.
-  const showHearts = ["play", "daily", "endless"].includes(G.mode);
+  const showHearts = ["play", "shared", "daily", "endless"].includes(G.mode);
   $("heartsRow").hidden = !showHearts;
   if (showHearts) $("heartsRow").innerHTML = heartsRow(G.hearts)
     + (G.shield ? `<span class="shield-on">${icon("shield")}Shield</span>` : "");
@@ -544,9 +546,9 @@ function updateBar() {
     $("gameTitle").textContent = "Tutorial";
     $("gameSub").textContent = `Lesson ${G.step + 1} of ${TUTORIAL.length} · ${TUTORIAL[G.step].title}`;
     $("gameStatus").innerHTML = icon("book");
-  } else if (G.mode === "play") {
+  } else if (G.mode === "play" || G.mode === "shared") {
     const d = difficulty(G.diff);
-    $("gameTitle").textContent = d.name;
+    $("gameTitle").textContent = G.mode === "shared" ? `Friend's puzzle · ${d.name}` : d.name;
     $("gameSub").textContent = `${p.size}×${p.size} board · ${p.frames[0].length} blocks`;
     $("gameStatus").innerHTML = "";
   } else if (G.mode === "endless") {
@@ -738,7 +740,7 @@ function finish(win) {
       : [["Skip tutorial", skipTutorial], ["Next lesson", () => playTutorial(G.step + 1), true, "next"]];
   }
 
-  if (G.mode === "play") {
+  if (G.mode === "play" || G.mode === "shared") {
     store.recordPerfect(S, stars === 3);
     store.recordDifficulty(S, G.diff, stars);
     S.totalStars += stars;
@@ -747,7 +749,9 @@ function finish(win) {
       if (stars === 3) lines.push(["Perfect bonus", Math.round(PLAY_COINS[G.diff] / 2)]);
       if (stars === 3 && S.perfectStreak >= 3) lines.push([`${S.perfectStreak} perfect in a row`, 5]);
     }
-    buttons = [["Home", goHomeNow, false, "back"], ["Next puzzle", () => playDifficulty(G.diff), true, "next"]];
+    buttons = G.mode === "shared"
+      ? [["Home", goHomeNow, false, "back"], [`More ${difficulty(G.diff).name}`, () => playDifficulty(G.diff), true, "next"]]
+      : [["Home", goHomeNow, false, "back"], ["Next puzzle", () => playDifficulty(G.diff), true, "next"]];
   }
 
   if (G.mode === "daily") {
@@ -768,8 +772,11 @@ function finish(win) {
   if (earned) earn(earned);
   store.save(S);
   updateBar();
+  G.lastStars = stars;
+  const friend = G.mode === "shared" && G.friendStars !== null && G.friendStars !== undefined
+    ? `Your friend got ${G.friendStars}/3 hearts on this one. ` : "";
   const text = G.mode === "daily" && G.used.length ? `${plural(G.used.length, "ability")} used: your shared result will say so`
-    : win ? "" : "Here's the right answer and where it goes next.";
+    : friend + (win ? "" : "Here's the right answer and where it goes next.");
   const game = G;
   setTimeout(() => { if (G === game) openEnd({ stars, title, text, lines, preview: true, buttons }); }, 800);
 }
@@ -788,6 +795,7 @@ function openEnd({ stars, title, text = "", lines = [], preview, buttons }) {
 
   G.preview = preview;
   $("endMistakes").hidden = G.attempts.length === 0;
+  $("endChallenge").hidden = !["play", "shared"].includes(G.mode);
   $("endMistakes").onclick = () => toggleReview(!G.reviewing);
   toggleReview(false, true);
 
@@ -1073,7 +1081,7 @@ async function shareDaily() {
   copyText(text);
 }
 
-async function copyText(text) {
+async function copyText(text, msg = "Result copied: paste it anywhere") {
   try {
     await navigator.clipboard.writeText(text);
   } catch (_) {
@@ -1082,7 +1090,7 @@ async function copyText(text) {
     try { document.execCommand("copy"); } catch (_) {}
     ta.remove();
   }
-  toast("Result copied: paste it anywhere");
+  toast(msg);
 }
 
 // ---------- Rush (no hearts, no abilities) ----------
@@ -1327,6 +1335,7 @@ function closeIntro(start) {
   clearInterval(introTimer);
   $("intro").hidden = true;
   if (!S.seenIntro) { S.seenIntro = true; store.save(S); }
+  if (pendingShared) { const sp = pendingShared; pendingShared = null; playShared(sp); return; }
   if (start && !S.tutorialDone) playTutorial(0);
 }
 $("introNext").onclick = () => (introIndex < INTRO.length - 1 ? showIntro(introIndex + 1) : closeIntro(true));
@@ -1392,8 +1401,105 @@ function playIntroDemo(kind) {
 }
 
 // ---------- Start ----------
+// ---------- Shared puzzles: a friend's link opens that exact board ----------
+let pendingShared = null;
+
+function sharePuzzleLink() {
+  return `${SITE}#puzzle=${encodePuzzle(G.puzzle, G.diff, G.phase === "done" ? G.lastStars ?? null : null)}`;
+}
+async function sharePuzzle() {
+  const d = difficulty(G.diff), stars = G.lastStars;
+  const brag = stars ? ` I got ${stars}/3 hearts.` : "";
+  const text = `Can you solve this ${d.name} Color Life puzzle (${G.puzzle.size}×${G.puzzle.size})?${brag} Then watch where it goes.`;
+  const url = sharePuzzleLink();
+  const native = window.Capacitor?.Plugins?.Share;
+  try {
+    if (native) { await native.share({ title: "Color Life puzzle", text, url, dialogTitle: "Challenge a friend" }); return; }
+    if (navigator.share) { await navigator.share({ title: "Color Life puzzle", text, url }); return; }
+  } catch (e) {
+    if (/cancel|abort/i.test(String(e?.message || e?.name))) return;
+  }
+  copyText(`${text}\n${url}`, "Puzzle link copied: send it to a friend");
+}
+$("endChallenge").onclick = sharePuzzle;
+
+function playShared({ puzzle, diffId, stars }) {
+  leaveScreen();
+  newGame("shared", { diff: diffId, friendStars: stars });
+  go("game");
+  startPuzzle(puzzle);
+}
+
+// Opening the app from a link like …/#puzzle=v1.3.8.AAAY…
+function openSharedFromText(text, quiet = false) {
+  const code = findPuzzleCode(text);
+  const shared = code && decodePuzzle(code);
+  if (!shared) { if (!quiet) toast("That doesn't look like a Color Life puzzle link"); return false; }
+  if (!S.seenIntro) { pendingShared = shared; showIntro(0); }
+  else playShared(shared);
+  return true;
+}
+function checkHashForPuzzle() {
+  if (!/puzzle=/.test(location.hash)) return false;
+  const ok = openSharedFromText(location.hash);
+  history.replaceState(history.state, "", location.pathname + location.search);   // don't reopen on back/reload
+  return ok;
+}
+window.addEventListener("hashchange", checkHashForPuzzle);
+$("openLinkBtn").onclick = () => {
+  const text = window.prompt("Paste the puzzle link your friend sent you:");
+  if (text) openSharedFromText(text);
+};
+
+// ---------- Leaderboard ----------
+// Stars per difficulty, plus an Overall score where harder stars are worth more,
+// so farming Very easy doesn't win. Other players are placeholders for the playtest.
+const WEIGHTS = { "very-easy": 1, easy: 2, medium: 3, hard: 5, "very-hard": 8, extreme: 12 };
+let leaderTab = "overall";
+const FAKE_NAMES = ["Mira", "glider_fan", "Toma", "pixelpond", "Nino", "Ava R.", "blinker", "Luka", "sunny_side", "Kai", "Elene", "R. Okafor",
+  "midnightowl", "Leo", "June", "toad42", "Ida", "beehive", "Theo", "Zuri", "Pavel", "cellmate", "Noor", "Ilia", "oscillator",
+  "Maya", "Giorgi", "loaf_life", "Sami", "Hana", "spaceship", "Dato", "Lena", "Rio", "still_life", "Ana", "Felix", "quietgrid", "Ben", "Tika"];
+
+function fakePlayers() {
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  return FAKE_NAMES.map((name) => {
+    const skill = rand();                       // casual players stay on easy boards, skilled ones climb
+    const stars = {};
+    DIFFICULTIES.forEach((d, i) => {
+      const reach = Math.max(0, 1 - Math.abs(i / 5 - skill) * 1.6);
+      stars[d.id] = Math.round(reach * (40 + rand() * 260));
+    });
+    return { name, stars };
+  });
+}
+const overallScore = (stars) => DIFFICULTIES.reduce((t, d) => t + (stars[d.id] || 0) * WEIGHTS[d.id], 0);
+
+function renderLeaders() {
+  const tabs = [{ id: "overall", name: "Overall" }, ...DIFFICULTIES.map((d) => ({ id: d.id, name: d.name }))];
+  $("leaderTabs").innerHTML = tabs.map((t) => `<button class="${t.id === leaderTab ? "on" : ""}" data-id="${t.id}">${t.name}</button>`).join("");
+  $("leaderTabs").querySelectorAll("button").forEach((b) => (b.onclick = () => { leaderTab = b.dataset.id; renderLeaders(); }));
+  const myStars = Object.fromEntries(DIFFICULTIES.map((d) => [d.id, S.diffStats[d.id]?.stars || 0]));
+  const score = (p) => (leaderTab === "overall" ? overallScore(p.stars) : p.stars[leaderTab] || 0);
+  const all = [...fakePlayers(), { name: "You", stars: myStars, me: true }]
+    .map((p) => ({ ...p, score: score(p) }))
+    .sort((a, b) => b.score - a.score || (a.me ? -1 : 1));
+  const unit = leaderTab === "overall" ? "pts" : "★";
+  $("leadersSub").textContent = leaderTab === "overall" ? "Weighted by difficulty" : `Stars earned on ${difficulty(leaderTab).name}`;
+  $("leaderNote").innerHTML = leaderTab === "overall"
+    ? `Harder stars count more: ${DIFFICULTIES.map((d) => `${d.name} ×${WEIGHTS[d.id]}`).join(" · ")}`
+    : "Only stars earned on this difficulty count here.";
+  const row = (p, i) => `<li class="${p.me ? "me" : ""}"><span class="rank">${i + 1}</span><span class="avatar">${p.me ? icon("star", "fill") : p.name[0].toUpperCase()}</span><span class="name">${p.name}</span><span class="score">${p.score.toLocaleString()} <small>${unit}</small></span></li>`;
+  $("leaderList").innerHTML = all.slice(0, 25).map(row).join("");
+  const myRank = all.findIndex((p) => p.me);
+  $("leaderMe").hidden = myRank < 25;
+  if (myRank >= 25) $("leaderMe").innerHTML = `<ol class="leader-list" start="${myRank + 1}">${row(all[myRank], myRank)}</ol>`;
+}
+$("leadersBtn").onclick = () => go("leaders");
+
+// ---------- Start ----------
 show("home");
-if (!S.seenIntro) showIntro(0);
+if (!checkHashForPuzzle() && !S.seenIntro) showIntro(0);
 
 // Offline support for the installable web app (not needed inside the Android app).
 if ("serviceWorker" in navigator && !window.Capacitor && location.protocol === "https:") {

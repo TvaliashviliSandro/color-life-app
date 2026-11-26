@@ -183,3 +183,44 @@ export function starsFor(mistakes, slack = 1) {
   if (mistakes <= 2 * slack) return 1;
   return 0;
 }
+
+// ---------- Shared puzzles ----------
+// A shared puzzle travels inside its link: "v1.<difficulty #>.<board size>.<live cells as bits, base64url>[.<sender's stars>]".
+// No server needed, and it doesn't depend on the generator staying the same.
+const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+export function encodePuzzle(puzzle, diffId, stars = null) {
+  const n = puzzle.size, bytes = new Uint8Array(Math.ceil((n * n) / 8));
+  for (const k of puzzle.frames[0]) {
+    const [x, y] = parse(k), i = y * n + x;
+    bytes[i >> 3] |= 1 << (i & 7);
+  }
+  const di = DIFFICULTIES.findIndex((d) => d.id === diffId);
+  return ["v1", di, n, b64url(bytes), ...(stars === null ? [] : [stars])].join(".");
+}
+
+// Returns { puzzle, diffId, stars } or null for anything that isn't a valid, fair puzzle.
+export function decodePuzzle(code) {
+  try {
+    const [v, di, n, data, stars] = String(code).trim().split(".");
+    const d = DIFFICULTIES[+di], size = +n;
+    if (v !== "v1" || !d || !Number.isInteger(size) || size < 3 || size > 12 || !data) return null;
+    const bytes = unb64url(data);
+    if (bytes.length !== Math.ceil((size * size) / 8)) return null;
+    const start = new Set();
+    for (let i = 0; i < size * size; i++) if (bytes[i >> 3] & (1 << (i & 7))) start.add(key(i % size, Math.floor(i / size)));
+    const next = step(start);
+    if (!start.size || !inBoard(next, size)) return null;     // births must stay on the board
+    const s = stars === undefined || stars === "" ? null : Math.max(0, Math.min(3, Math.round(+stars)));
+    return { puzzle: build(start, next, size, d.slack), diffId: d.id, stars: Number.isNaN(s) ? null : s };
+  } catch (_) {
+    return null;
+  }
+}
+
+// Finds a puzzle code in a pasted link, a "#puzzle=…" hash, or a bare code.
+export function findPuzzleCode(text) {
+  const m = String(text || "").match(/(?:puzzle=)?(v1\.\d+\.\d+\.[A-Za-z0-9_-]+(?:\.\d)?)/);
+  return m ? m[1] : null;
+}
