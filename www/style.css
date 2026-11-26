@@ -942,3 +942,6 @@ button.small { padding: 7px 12px; font-size: 13px; }
 .playtest-note .ic { color: var(--born); flex: none; }
 .chips, .leader-note, .leader-list, .leader-me, .playtest-note { flex: none; }
 .chips button { line-height: 1.2; }
+.quad button[hidden] { display: none !important; }
+.quad:has(button[hidden]) { grid-template-columns: repeat(3, 1fr); }
+.privacy-link { display: block; text-align: center; margin: 24px 0 8px; font-size: 13px; color: var(--muted); }

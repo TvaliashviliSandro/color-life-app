@@ -45,7 +45,8 @@ export function load() {
     }
   } catch (_) {}
   // Playtest build: everyone gets plenty of coins to try abilities, continues and themes.
-  if (!s.playtestGrant) { s.coins += 5000; s.playtestGrant = true; }
+  // (Web playtest only: the store app starts at 0 coins.)
+  if (!s.playtestGrant && !window.Capacitor?.isNativePlatform?.()) { s.coins += 5000; s.playtestGrant = true; }
   return s;
 }
 

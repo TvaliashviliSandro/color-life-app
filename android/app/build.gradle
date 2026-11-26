@@ -11,6 +11,8 @@ android {
         def buildNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "1"
         versionCode = Integer.parseInt(buildNumber)
         versionName = "1.0." + buildNumber
+        // AdMob app ID (not secret). Falls back to Google's official test app ID.
+        manifestPlaceholders = [admobAppId: System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -19,20 +21,29 @@ android {
         }
     }
     signingConfigs {
-        // Signs the APK for installing outside the Play Store. Uses the keystore from
-        // GitHub secrets if set, otherwise the sideload keystore committed in this folder.
-        // Keep using the same key: Android only installs an update signed with the same key.
-        release {
-            def ks = System.getenv("ANDROID_KEYSTORE_PATH")
-            storeFile ks ? file(ks) : file("sideload.keystore")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "colorlife"
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "colorlife"
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: "colorlife"
+        // Signs the APK for installing outside the Play Store, with the sideload keystore
+        // committed in this folder. Keep using it: Android only installs updates signed
+        // with the same key.
+        sideload {
+            storeFile file("sideload.keystore")
+            storePassword "colorlife"
+            keyAlias "colorlife"
+            keyPassword "colorlife"
+        }
+        // Signs the Play Store bundle with your PRIVATE upload key. CI writes it from
+        // GitHub secrets and sets these variables; it is never committed.
+        if (System.getenv("UPLOAD_KEYSTORE_PATH")) {
+            upload {
+                storeFile file(System.getenv("UPLOAD_KEYSTORE_PATH"))
+                storePassword System.getenv("UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("UPLOAD_KEY_ALIAS")
+                keyPassword System.getenv("UPLOAD_KEY_PASSWORD") ?: System.getenv("UPLOAD_KEYSTORE_PASSWORD")
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig System.getenv("UPLOAD_KEYSTORE_PATH") ? signingConfigs.upload : signingConfigs.sideload
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

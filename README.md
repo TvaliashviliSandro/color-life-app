@@ -22,20 +22,21 @@ next step, then watch it happen. Each puzzle takes 10–30 seconds.
   leaderboards (e.g. Google Play Games) are connected.
 - **🎨 Themes:** System, Light and Dark are free (System follows the phone). Colour themes unlock with coins.
 
-## Playtest build (current)
-
-Ads and purchases are **mocked** so the full experience can be tried before the Play Store:
+## Ads, purchases and the playtest
 
 - Every puzzle has **3 hearts**; each wrong Check costs one and flags the wrong cells (missed births only as a count).
-- Out of hearts → **Continue** for +1 heart: first a fake rewarded ad, then 50, 100, 200… coins. Or give up and see the answer.
+- Out of hearts → **Continue** for +1 heart: first a rewarded ad, then 50, 100, 200… coins. Or give up and see the answer.
 - **Abilities** cost coins (Peek, Counter, Paintball, Rocket, Birth scan, Shield). Allowed in Play, Daily and Endless, not Rush.
-  A shared Daily result says which abilities were used.
-- **End-of-puzzle popup**: a replay of where the pattern goes, coins earned, and "Check mistakes" with a plain-language
-  reason for every wrong cell.
-- **Shop**: fake coin packs with a fake Google Play sheet, a fake "watch an ad" for coins, and a daily bonus.
-  Every player gets 5,000 coins once. Nothing is charged.
+- **End-of-puzzle popup**: a replay, coins earned, and "Check mistakes" with a plain-language reason for every wrong cell.
 
-Real ads (AdMob rewarded) and real coin packs (Google Play Billing) replace the mocks once the app is on the Play Store.
+| | Android app (Play Store version) | Web / iPhone version (playtest) |
+|---|---|---|
+| Rewarded ads | Real AdMob ads (`www/js/monetize.js`) | Labelled fake ad |
+| Coin packs | Google Play Billing, prices from Play | Labelled test purchase, nothing charged |
+| Starting coins | 0 | 5,000 once |
+| Leaderboard | Hidden until real online rankings exist | Placeholder players |
+
+Ad unit and AdMob settings live in `www/js/config.js`. Play Store steps: **[store/PLAY_STORE.md](store/PLAY_STORE.md)**.
 
 It ships as an Android `.apk` and an installable web app for iPhone, both without an app store.
 Every push to `main` rebuilds both automatically (see `.github/workflows/build.yml`).
@@ -86,12 +87,15 @@ cd android && ./gradlew assembleRelease
 
 ## Signing
 
-APKs are signed with `android/app/sideload.keystore` (password `colorlife`), which is committed to the repo so
-every build uses the same key and updates install cleanly. That's fine for sharing with friends, but anyone with the
-repo could sign an APK as this app. Before a wider release or the Play Store, create a private keystore and add these
-repository secrets; the build uses them automatically when they're set:
-`ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
-Switching keys means people uninstall the old version once.
+- **Sideload APK** (GitHub releases): signed with `android/app/sideload.keystore` (password `colorlife`), committed so
+  every build can update the last one. Fine for friends; not secret.
+- **Play Store bundle** (`.aab`): signed with your private **upload key**, which lives only in GitHub secrets
+  (`UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEYSTORE_PASSWORD`, `UPLOAD_KEY_ALIAS`, `UPLOAD_KEY_PASSWORD`). The bundle is
+  built only when those exist, and is attached to the workflow run as `ColorLife-play-bundle`, not to the public release.
+  See [store/PLAY_STORE.md](store/PLAY_STORE.md).
+
+The two versions are signed differently, so someone who sideloaded the APK must uninstall it once before installing
+from the Play Store.
 
 ## A native iOS app later
 

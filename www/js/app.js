@@ -11,6 +11,7 @@ import { THEMES, APPEARANCES, FREE, applyTheme, previewVars } from "./themes.js"
 import { openPlayground, closePlayground } from "./playground.js";
 import { createSim } from "./sim.js";
 import { icon, hydrateIcons } from "./icons.js";
+import { NATIVE, initAds, showRewardedAd, initBilling, PACKS, priceOf, buyPack as buyPackNative } from "./monetize.js";
 
 const $ = (id) => document.getElementById(id);
 const SITE = "https://tvaliashvilisandro.github.io/color-life-app/";
@@ -683,7 +684,15 @@ const FAKE_ADS = [
   ["Cloud Storage Pro", "Your photos, safely somewhere else."],
 ];
 let adTimer;
-function showAd(onReward, reward) {
+async function showAd(onReward, reward) {
+  if (NATIVE) {
+    navBusy(30000);                           // block taps while the ad loads and plays
+    const ok = await showRewardedAd();
+    navDone();
+    if (ok) onReward();
+    else toast("No ad available right now. Try again in a moment.");
+    return;
+  }
   const [title, text] = FAKE_ADS[Math.floor(Math.random() * FAKE_ADS.length)];
   $("adTitle").textContent = title;
   $("adText").textContent = `${text} (Test ad: in the real app a 15–30 second video plays here.)`;
@@ -1148,13 +1157,17 @@ function endRush() {
 
 function stopRush() { clearInterval(rushTimer); rushTimer = null; }
 
-// ---------- Shop (mocked purchases for the playtest) ----------
-const PACKS = [
-  { coins: 500, price: "$0.99" },
-  { coins: 1200, price: "$1.99", tag: "Popular" },
-  { coins: 3000, price: "$4.99", tag: "Best value" },
-  { coins: 7000, price: "$9.99" },
-];
+// ---------- Shop: Google Play Billing in the app, test mock on the web ----------
+// Each completed Play purchase grants its coins exactly once.
+initBilling((pack, txId) => {
+  S.granted ||= [];
+  if (txId && S.granted.includes(txId)) return;
+  if (txId) { S.granted.push(txId); S.granted = S.granted.slice(-100); }
+  earn(pack.coins);
+  if (current === "shop") renderShop();
+  toast(`Purchase complete · +${coinsHTML(pack.coins)}`, 2400);
+}, () => { if (current === "shop") renderShop(true); });
+initAds();
 
 function openShop() {
   if (current === "game" && G && !$("continueModal").hidden) { G.reopenContinue = true; $("continueModal").hidden = true; }
@@ -1167,7 +1180,7 @@ function adCoinsLeft() {
   return AD_COINS_PER_DAY - S.adCoins.count;
 }
 
-function renderShop() {
+function renderShop(pricesChanged = false) {
   const left = adCoinsLeft();
   $("adCoinsSub").innerHTML = left > 0 ? `+${coinsHTML(AD_COINS)} · ${left} left today` : "Come back tomorrow";
   $("adCoinsBtn").disabled = left <= 0;
@@ -1175,13 +1188,14 @@ function renderShop() {
   $("dailyBonusSub").innerHTML = claimed ? "Claimed today · come back tomorrow" : `+${coinsHTML(DAILY_BONUS)} once a day`;
   $("dailyBonusBtn").disabled = claimed;
   const packs = $("packs");
+  if (pricesChanged) packs.innerHTML = "";
   if (!packs.childElementCount) {
     packs.innerHTML = PACKS.map((p, i) => `
       <button class="pack" data-i="${i}">
         ${p.tag ? `<span class="pack-tag">${p.tag}</span>` : ""}
         <span class="pack-coins">${Array.from({ length: i + 1 }, () => icon("coin", "coin")).join("")}</span>
         <b>${p.coins.toLocaleString()}</b><small>coins</small>
-        <span class="pack-price">${p.price}</span>
+        <span class="pack-price">${priceOf(p) || "Not available yet"}</span>
       </button>`).join("");
     packs.querySelectorAll(".pack").forEach((b) => (b.onclick = () => buyPack(PACKS[+b.dataset.i])));
   }
@@ -1204,12 +1218,17 @@ $("dailyBonusBtn").onclick = () => {
   toast(`Daily bonus · +${coinsHTML(DAILY_BONUS)}`);
 };
 
-function buyPack(p) {
+async function buyPack(p) {
+  if (NATIVE) {
+    const r = await buyPackNative(p);     // Google Play shows its own purchase sheet
+    if (r === "unavailable") toast("This coin pack isn't available yet. Try again later.");
+    return;                                // coins arrive through initBilling once Play confirms
+  }
   $("buyName").textContent = `${p.coins.toLocaleString()} coins`;
-  $("buyPrice").textContent = p.price;
+  $("buyPrice").textContent = p.mockPrice;
   const btn = $("buyGo");
   btn.disabled = false;
-  btn.textContent = `Buy · ${p.price}`;
+  btn.textContent = `Buy · ${p.mockPrice}`;
   btn.onclick = async () => {
     btn.disabled = true;
     btn.textContent = "Processing…";
@@ -1498,6 +1517,13 @@ function renderLeaders() {
 $("leadersBtn").onclick = () => go("leaders");
 
 // ---------- Start ----------
+// The Android app is the store version: no playtest tag, and the leaderboard stays
+// hidden until real online rankings exist (placeholder players would mislead).
+if (NATIVE) {
+  document.querySelector(".playtest-tag").hidden = true;
+  $("leadersBtn").hidden = true;
+  $("shop").querySelector(".bar-title span").textContent = "Coins for abilities, continues and themes";
+}
 show("home");
 if (!checkHashForPuzzle() && !S.seenIntro) showIntro(0);
 

@@ -40,15 +40,44 @@ jobs:
 
       - name: Build signed APK
         working-directory: android
+        env:
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk ../ColorLife.apk
 
+      # The Play Store bundle (.aab), signed with your private upload key.
+      # Skipped until the UPLOAD_KEYSTORE_BASE64 secret exists (see store/PLAY_STORE.md).
+      - name: Build Play Store bundle
+        working-directory: android
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_BASE64" ]; then
+            echo "::notice::No upload key secret yet, so no Play Store bundle this time."
+            exit 0
+          fi
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          export UPLOAD_KEYSTORE_PATH="$RUNNER_TEMP/upload.keystore"
+          ./gradlew bundleRelease --no-daemon
+          cp app/build/outputs/bundle/release/app-release.aab ../ColorLife-play.aab
+          rm -f "$UPLOAD_KEYSTORE_PATH"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ColorLife-apk
           path: ColorLife.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ColorLife-play-bundle
+          path: ColorLife-play.aab
+          if-no-files-found: ignore
 
       - name: Publish release
         if: github.ref == 'refs/heads/main'

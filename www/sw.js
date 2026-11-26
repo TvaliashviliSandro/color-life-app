@@ -1,8 +1,8 @@
 // Offline support: cache the app shell, serve it from cache, refresh in the background.
-const CACHE = "color-life-game-v17";
+const CACHE = "color-life-game-v18";
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
-  "js/app.js", "js/puzzles.js", "js/life.js", "js/rng.js", "js/store.js", "js/themes.js", "js/playground.js", "js/sim.js", "js/icons.js",
+  "js/app.js", "js/puzzles.js", "js/life.js", "js/rng.js", "js/store.js", "js/themes.js", "js/playground.js", "js/sim.js", "js/icons.js", "js/monetize.js", "js/config.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon.png",
 ];
 
